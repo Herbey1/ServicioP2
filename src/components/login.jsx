@@ -9,7 +9,7 @@ function LoginPage({ setIsAuthenticated }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [userType, setUserType] = useState("docente")
-  const [mode, setMode] = useState("login") // NUEVO estado para cambiar entre login y registro
+  const [mode, setMode] = useState("login") 
   const navigate = useNavigate()
 
   const handleSubmit = (e) => {
