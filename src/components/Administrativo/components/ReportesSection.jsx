@@ -1,13 +1,46 @@
-import React from "react";
+"use client"
 
-export default function ReportesSection() {
+import TabSelector from "../../Docente/components/TabSelector"
+import ReportCard  from "./ReportCard"
+
+export default function ReportesSection({
+  activeTab,
+  setActiveTab,
+  tabs,
+  reportesActivos,
+  handleReviewClick
+}) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center">
-      <div className="text-gray-500 text-lg mb-4">Sección de Reportes Administrativos</div>
-      <p className="text-gray-400 text-center">
-        Esta sección está en desarrollo.<br />
-        Aquí podrás ver estadísticas y reportes de todas las solicitudes.
-      </p>
-    </div>
-  );
+    <>
+      {/* Tabs */}
+      <TabSelector
+        tabs={tabs}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
+
+      {/* Lista de reportes */}
+      <div className="space-y-4 flex-1 overflow-y-auto">
+        {reportesActivos.length > 0 ? (
+          reportesActivos.map((reporte, index) => (
+            <ReportCard
+              key={index}
+              reporte={reporte}
+              onReviewClick={() => handleReviewClick(activeTab, index, reporte)}
+            />
+          ))
+        ) : (
+          <div className="text-center py-10 text-gray-500">
+            No hay reportes {activeTab.toLowerCase()}
+          </div>
+        )}
+
+        {/* Placeholders si está vacío */}
+        {reportesActivos.length === 0 &&
+          [...Array(2)].map((_, i) => (
+            <div key={i} className="bg-gray-100 rounded-xl px-4 py-6 h-[60px]" />
+          ))}
+      </div>
+    </>
+  )
 }
