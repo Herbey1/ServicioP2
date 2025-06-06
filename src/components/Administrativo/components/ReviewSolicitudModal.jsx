@@ -27,12 +27,77 @@ export default function ReviewSolicitudModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <h2 className="text-2xl font-bold mb-6">{solicitud.titulo}</h2>
+        <div className="p-6">          <h2 className="text-2xl font-bold mb-6">{solicitud.titulo}</h2>
 
-          {/* … aquí irían los datos que ya mostraste (omitidos por brevedad) … */}
+          {/* Datos principales */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Información del solicitante */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold mb-3 text-gray-800 border-b pb-2">Información del solicitante</h3>
+              <p><span className="font-medium">Solicitante:</span> {solicitud.solicitante}</p>
+              {solicitud.numeroEmpleado && (
+                <p><span className="font-medium">Número de empleado:</span> {solicitud.numeroEmpleado}</p>
+              )}
+              <p><span className="font-medium">Programa educativo:</span> {solicitud.programaEducativo || "No especificado"}</p>
+              <p className="mt-2"><span className="font-medium">Status actual:</span> <span className={`px-2 py-0.5 rounded-full text-sm ${
+                solicitud.status === "Aprobada" ? "bg-green-100 text-green-800" :
+                solicitud.status === "Rechazada" ? "bg-red-100 text-red-800" :
+                solicitud.status === "Devuelta" ? "bg-yellow-100 text-yellow-800" :
+                "bg-blue-100 text-blue-800"
+              }`}>{solicitud.status}</span></p>
+            </div>
 
-          {/* Comentarios */}
+            {/* Detalles de la comisión */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold mb-3 text-gray-800 border-b pb-2">Detalles de la comisión</h3>
+              <p><span className="font-medium">Tipo de participación:</span> {solicitud.tipoParticipacion}</p>
+              <p><span className="font-medium">Ubicación:</span> {`${solicitud.ciudad}, ${solicitud.pais}`}</p>
+              {solicitud.lugar && (
+                <p><span className="font-medium">Lugar específico:</span> {solicitud.lugar}</p>
+              )}
+              <p className="mt-2"><span className="font-medium">Proyecto de investigación:</span> {solicitud.proyectoInvestigacion ? "Sí" : "No"}</p>
+              <p><span className="font-medium">¿Obtiene constancia?:</span> {solicitud.obtendraConstancia ? "Sí" : "No"}</p>
+            </div>
+          </div>
+
+          {/* Fechas y logística */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <h3 className="font-semibold mb-3 text-gray-800 border-b pb-2">Fechas y logística</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p><span className="font-medium">Fecha de salida:</span> {solicitud.fechaSalida}</p>
+                <p><span className="font-medium">Fecha de regreso:</span> {solicitud.fechaRegreso}</p>
+                {solicitud.horaSalida && (
+                  <p><span className="font-medium">Horario:</span> {solicitud.horaSalida} - {solicitud.horaRegreso || '--:--'}</p>
+                )}
+              </div>
+              <div>
+                <p><span className="font-medium">Número de personas:</span> {solicitud.numeroPersonas || 1}</p>
+                <p><span className="font-medium">Necesita transporte:</span> {solicitud.necesitaTransporte ? "Sí" : "No"}</p>
+                {solicitud.necesitaTransporte && solicitud.cantidadCombustible > 0 && (
+                  <p><span className="font-medium">Cantidad combustible:</span> {solicitud.cantidadCombustible} litros</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Comentarios adicionales del solicitante */}
+          {solicitud.comentarios && (
+            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <h3 className="font-semibold mb-2 text-gray-800 border-b pb-2">Comentarios del solicitante</h3>
+              <p className="text-gray-700">{solicitud.comentarios}</p>
+            </div>
+          )}
+          
+          {/* Comentarios previos del administrador */}
+          {solicitud.comentariosAdmin && (
+            <div className="bg-blue-50 p-4 rounded-lg mb-6 border border-blue-100">
+              <h3 className="font-semibold mb-2 text-blue-800">Comentarios administrativos previos</h3>
+              <p className="text-gray-700">{solicitud.comentariosAdmin}</p>
+            </div>
+          )}
+
+          {/* Comentarios nuevos */}
           <div className="mb-6">
             <label className="block font-semibold mb-2">Comentarios administrativos</label>
             <textarea

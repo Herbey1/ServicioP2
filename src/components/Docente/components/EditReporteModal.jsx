@@ -116,10 +116,9 @@ export default function EditReporteModal({
         </div>
 
         {/* Botones */}
-        <div className="mt-8 flex justify-between">
-          <button
+        <div className="mt-8 flex justify-between">          <button
             onClick={() => {
-              if (confirm("¿Eliminar este reporte?")) eliminar()
+              if (window.confirm("¿Eliminar este reporte?")) eliminar()
             }}
             className="px-5 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium"
           >
