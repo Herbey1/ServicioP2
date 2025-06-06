@@ -80,16 +80,16 @@ El proyecto está desarrollado con React, utilizando:
 - Generación de reportes y estadísticas.
 
 ## Roadmap
- CRUD Solicitudes (Docente)
- Flujo de Revisión Solicitudes (Admin)
- CRUD Reportes (Docente)
- Flujo de Revisión Reportes (Admin)
- Sección Perfil
- Dashboard estadístico con gráficas
- Subida real de archivos a S3/Cloudinary
- Single Sign-On (UABC)
- Notificaciones por correo
- Modo oscuro completo
+- CRUD Solicitudes (Docente)
+- Flujo de Revisión Solicitudes (Admin)
+- CRUD Reportes (Docente)
+- Flujo de Revisión Reportes (Admin)
+- Sección Perfil (LISTO)
+- Dashboard estadístico con gráficas
+- Subida real de archivos a S3/Cloudinary
+- Single Sign-On (UABC)
+- Notificaciones por correo
+- Modo oscuro completo 
 
 ## Créditos
 ### Gámez Gastelum Alberto
