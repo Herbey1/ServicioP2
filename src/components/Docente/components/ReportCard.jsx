@@ -17,7 +17,14 @@ export default function ReportCard({ reporte, index, statusColors, handleEdit })
     <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex justify-between items-center">
       {/* Información principal */}
       <div className="mr-4">
-        <h3 className="font-semibold text-lg">{reporte.titulo}</h3>
+        <div className="flex items-center gap-2 mb-1">
+          <h3 className="font-semibold text-lg">{reporte.titulo}</h3>
+          {reporte.id && (
+            <span className="text-xs bg-purple-100 text-purple-800 py-0.5 px-2 rounded">
+              {reporte.id}
+            </span>
+          )}
+        </div>
         <p className="text-sm text-gray-600">
           Entregado por: <span className="font-medium">{reporte.solicitante}</span>
         </p>

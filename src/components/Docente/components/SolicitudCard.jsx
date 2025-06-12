@@ -6,7 +6,14 @@ export default function SolicitudCard({ solicitud, index, statusColors, handleEd
       className="bg-gray-100 rounded-xl px-4 py-3 flex justify-between items-center"
     >
       <div>
-        <h3 className="font-semibold">{solicitud.titulo}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold">{solicitud.titulo}</h3>
+          {solicitud.id && (
+            <span className="text-xs bg-blue-100 text-blue-800 py-0.5 px-2 rounded">
+              {solicitud.id}
+            </span>
+          )}
+        </div>
         <p className="text-sm text-gray-600">{solicitud.solicitante}</p>
       </div>
       <div className="flex items-center gap-4">

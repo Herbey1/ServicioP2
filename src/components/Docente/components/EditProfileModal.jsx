@@ -34,17 +34,37 @@ export default function EditProfileModal({ open, close, profile, save }) {
 
         {/* Formulario */}
         <div className="grid grid-cols-1 gap-4">
-          {Object.entries(formData).map(([label, value]) => (
-            <div key={label}>
-              <label className="block text-sm font-medium capitalize mb-1">{label}</label>
-              <input
-                name={label}
-                value={value}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-              />
-            </div>
-          ))}
+          {Object.entries(formData).map(([label, value]) => {
+            // Si el campo es "categoria", mostrarlo como "categoría" y deshabilitarlo
+            if (label === "categoria") {
+              return (
+                <div key={label}>
+                  <label className="block text-sm font-medium mb-1">Categoría</label>
+                  <input
+                    name={label}
+                    value={value}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
+                    readOnly
+                    disabled
+                  />
+                </div>
+              )
+            }
+            
+            return (
+              <div key={label}>
+                <label className="block text-sm font-medium capitalize mb-1">
+                  {label === "categoria" ? "Categoría" : label}
+                </label>
+                <input
+                  name={label}
+                  value={value}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                />
+              </div>
+            )
+          })}
         </div>
 
         {/* Botones */}

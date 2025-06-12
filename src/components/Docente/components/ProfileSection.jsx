@@ -9,7 +9,7 @@ export default function ProfileSection() {
     nombre     : "Fernando Huerta",
     correo     : "fernando.huerta@uabc.edu.mx",
     departamento: "Ingeniería en Computación",
-    categoria  : "Profesor de Tiempo Completo",
+    categoria  : "Docente", // Valor predeterminado para el perfil docente
     telefono   : "(646) 123-4567"
   })
 
@@ -24,7 +24,9 @@ export default function ProfileSection() {
         <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.entries(profile).map(([label, value]) => (
             <div key={label}>
-              <dt className="text-sm font-medium text-gray-500 capitalize">{label}</dt>
+              <dt className="text-sm font-medium text-gray-500 capitalize">
+                {label === "categoria" ? "Categoría" : label}
+              </dt>
               <dd className="text-lg font-semibold text-gray-900 break-all">{value}</dd>
             </div>
           ))}

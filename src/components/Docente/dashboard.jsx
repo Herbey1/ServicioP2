@@ -51,6 +51,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
 
   /* ──────────────── Estado: COMISIONES ──────────────── */
   const emptySolicitud = {
+    id: "", // ID único para la comisión
     titulo: "",
     solicitante: "Fernando Huerta",
     tipoParticipacion: "Asistente",
@@ -95,9 +96,18 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   /* CRUD Comisiones */
   const handleCreateSolicitud = () => {
     if (!newSolicitud.titulo) return alert("Completa el título.")
+    
+    // Generar ID único para la comisión
+    const year = new Date().getFullYear()
+    const count = solicitudesPorTab.Pendientes.length + 
+                  solicitudesPorTab.Aprobadas.length + 
+                  solicitudesPorTab.Rechazadas.length + 
+                  solicitudesPorTab.Devueltas.length + 1
+    const id = `COM-${year}-${count.toString().padStart(3, '0')}`
+    
     setSolicitudesPorTab(prev => ({
       ...prev,
-      Pendientes: [...prev.Pendientes, newSolicitud]
+      Pendientes: [...prev.Pendientes, {...newSolicitud, id}]
     }))
     setNewSolicitud(emptySolicitud)
     setShowCreateModal(false)
@@ -123,6 +133,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
 
   /* ──────────────── Estado: REPORTES ──────────────── */
   const emptyReporte = {
+    id          : "",  // ID único para el reporte
     titulo      : "",
     solicitante : "Fernando Huerta",
     descripcion : "",
@@ -145,9 +156,18 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   const handleCreateReporte = () => {
     if (!nuevoReporte.titulo || !nuevoReporte.descripcion || !nuevoReporte.fechaEntrega)
       return alert("Completa los campos obligatorios.")
+    
+    // Generar ID único para el reporte
+    const year = new Date().getFullYear()
+    const count = reportesPorTab.Pendientes.length + 
+                  reportesPorTab.Aprobados.length + 
+                  reportesPorTab.Rechazados.length + 
+                  reportesPorTab.Devueltos.length + 1
+    const id = `REP-${year}-${count.toString().padStart(3, '0')}`
+    
     setReportesPorTab(prev => ({
       ...prev,
-      Pendientes: [...prev.Pendientes, nuevoReporte]
+      Pendientes: [...prev.Pendientes, {...nuevoReporte, id}]
     }))
     setNuevoReporte(emptyReporte)
     setShowCreateReporteModal(false)
