@@ -46,9 +46,10 @@ export default function EditSolicitudModal({
               </label>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
                 value={modalEditData.solicitante}
-                onChange={(e) => setModalEditData({ ...modalEditData, solicitante: e.target.value })}
+                disabled
+                readOnly
               />
             </div>
             

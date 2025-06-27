@@ -3,25 +3,55 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 
-// Importamos los componentes
-import Sidebar from "./components/Sidebar"
-import Header from "./components/Header"
-import TabSelector from "./components/TabSelector"
-import SolicitudCard from "./components/SolicitudCard"
-import CreateSolicitudModal from "./components/CreateSolicitudModal"
-import EditSolicitudModal from "./components/EditSolicitudModal"
-import DeleteConfirmModal from "./components/DeleteConfirmModal"
-import LogoutConfirmModal from "./components/LogoutConfirmModal"
+/* Layout y navegación */
+import Sidebar             from "./components/Sidebar"
+import Header              from "./components/Header"
+import TabSelector         from "./components/TabSelector"
 
-export default function SolicitudesInterface({ setIsAuthenticated }) {
-  const [activeTab, setActiveTab] = useState("Pendientes")
-  const [activeSection, setActiveSection] = useState("Comisiones")
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [modalEditData, setModalEditData] = useState(null)
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [newSolicitud, setNewSolicitud] = useState({
+/* Tarjetas */
+import SolicitudCard       from "./components/SolicitudCard"
+import ReportCard          from "./components/ReportCard"
+
+/* Modales ─ Comisiones */
+import CreateSolicitudModal from "./components/CreateSolicitudModal"
+import EditSolicitudModal   from "./components/EditSolicitudModal"
+import DeleteConfirmModal   from "./components/DeleteConfirmModal"
+
+/* Modales ─ Reportes */
+import CreateReporteModal   from "./components/CreateReporteModal"
+import EditReporteModal     from "./components/EditReporteModal"
+
+/* Perfil */
+import ProfileSection      from "./components/ProfileSection"
+
+/* Logout */
+import LogoutConfirmModal  from "./components/LogoutConfirmModal"
+
+export default function DashboardDocente({ setIsAuthenticated }) {
+  /* ──────────────── Navegación y UI global ──────────────── */
+  const navigate = useNavigate()
+  const [activeSection, setActiveSection] = useState("Comisiones") // Comisiones | Reportes | Perfil
+  const [sidebarOpen,   setSidebarOpen]   = useState(false)
+  const [showLogout,    setShowLogout]    = useState(false)
+
+  const toggleSidebar   = () => setSidebarOpen(!sidebarOpen)
+  const confirmLogout   = () => setShowLogout(true)
+  const cancelLogout    = () => setShowLogout(false)
+  const handleLogout    = () => {
+    setIsAuthenticated(false)
+    navigate("/login")
+  }
+
+  /* ──────────────── Tabs comunes ──────────────── */
+  const tabsComisiones = ["Pendientes", "Aprobadas", "Rechazadas", "Devueltas"]
+  const tabsReportes   = ["Pendientes", "Aprobados", "Rechazados", "Devueltos"]
+
+  const [activeTabComisiones, setActiveTabComisiones] = useState("Pendientes")
+  const [activeTabReportes,   setActiveTabReportes]   = useState("Pendientes")
+
+  /* ──────────────── Estado: COMISIONES ──────────────── */
+  const emptySolicitud = {
+    id: "", // ID único para la comisión
     titulo: "",
     solicitante: "Fernando Huerta",
     tipoParticipacion: "Asistente",
@@ -31,7 +61,7 @@ export default function SolicitudesInterface({ setIsAuthenticated }) {
     fechaSalida: "",
     fechaRegreso: "",
     horaSalida: "",
-    horaRegreso: "", 
+    horaRegreso: "",
     numeroPersonas: 1,
     necesitaTransporte: false,
     cantidadCombustible: 0,
@@ -40,270 +70,240 @@ export default function SolicitudesInterface({ setIsAuthenticated }) {
     obtendraConstancia: true,
     comentarios: "",
     status: "En revisión"
-  })
+  }
 
-  const navigate = useNavigate()
+  const tiposParticipacion  = ["Ponente", "Asistente", "Organizador", "Jurado", "Otro"]
+  const programasEducativos = [
+    "Ingeniería Industrial",
+    "Ingeniería Civil",
+    "Ingeniería en Computación",
+    "Ingeniería Química",
+    "Ingeniería Electrónica",
+    "Bioingeniería"
+  ]
 
-  const tabs = ["Pendientes", "Aprobadas", "Rechazadas", "Devueltas"]
-
-  // Opciones para los selectores
-  const tiposParticipacion = ["Ponente", "Asistente", "Organizador", "Jurado", "Otro"]
-  const programasEducativos = ["Ingeniería Industrial", "Ingeniería Civil", "Ingeniería en Computación", "Ingeniería Química", "Ingeniería Electrónica", "Bioingeniería"]
-
+  const [showCreateModal,   setShowCreateModal]   = useState(false)
+  const [modalEditData,     setModalEditData]     = useState(null)   // { solicitud, index, tab }
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [newSolicitud,      setNewSolicitud]      = useState(emptySolicitud)
   const [solicitudesPorTab, setSolicitudesPorTab] = useState({
-    Pendientes: [],
-    Aprobadas: [
-      {
-        titulo: "Congreso Nacional de Ingeniería Química",
-        solicitante: "Fernando Huerta",
-        tipoParticipacion: "Ponente",
-        ciudad: "Ciudad de México",
-        pais: "México",
-        lugar: "UNAM",
-        fechaSalida: "2025-07-15",
-        fechaRegreso: "2025-07-18",
-        horaSalida: "07:00",
-        horaRegreso: "20:00", 
-        numeroPersonas: 1,
-        necesitaTransporte: false,
-        cantidadCombustible: 0,
-        programaEducativo: "Ingeniería Química",
-        proyectoInvestigacion: true,
-        obtendraConstancia: true,
-        comentarios: "Presentación de resultados del proyecto CONACYT",
-        status: "Aprobada",
-      }
-    ],
-    Rechazadas: [
-      {
-        titulo: "Conferencia internacional en Londres",
-        solicitante: "Fernando Huerta",
-        tipoParticipacion: "Ponente",
-        ciudad: "Londres",
-        pais: "Reino Unido",
-        lugar: "Imperial College",
-        fechaSalida: "2025-11-05",
-        fechaRegreso: "2025-11-12",
-        horaSalida: "07:00",
-        horaRegreso: "14:00", 
-        numeroPersonas: 1,
-        necesitaTransporte: false,
-        cantidadCombustible: 0,
-        programaEducativo: "Ingeniería Civil",
-        proyectoInvestigacion: true,
-        obtendraConstancia: true,
-        comentarios: "Fuera de presupuesto y fechas",
-        status: "Rechazada",
-      }
-    ],
-    Devueltas: []
+    Pendientes : [],
+    Aprobadas  : [],
+    Rechazadas : [],
+    Devueltas  : []
   })
 
-  const statusColors = {
-    "En revisión": { text: "text-yellow-700", bg: "bg-yellow-100" },
-    "Aprobada": { text: "text-green-700", bg: "bg-green-100" },
-    "Rechazada": { text: "text-red-700", bg: "bg-red-100" },
-    "Requiere correcciones": { text: "text-orange-700", bg: "bg-orange-100" },
-  }
-
-  const solicitudesActivas = solicitudesPorTab[activeTab] || []
-
-  const confirmLogout = () => setShowLogoutConfirm(true)
-  const handleLogout = () => {
-    setIsAuthenticated(false)
-    navigate('/login')
-  }
-  const cancelLogout = () => setShowLogoutConfirm(false)
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
-
-  const handleEditClick = (solicitud, index) => {
-    setModalEditData({ ...solicitud, index, tab: activeTab })
-  }
-
-  const handleSaveEdit = () => {
-    const { titulo, solicitante, tipoParticipacion, ciudad, pais, lugar, fechaSalida, fechaRegreso, 
-      horaSalida, horaRegreso, numeroPersonas, necesitaTransporte, cantidadCombustible, programaEducativo,
-      proyectoInvestigacion, obtendraConstancia, comentarios, tab, index } = modalEditData
+  /* CRUD Comisiones */
+  const handleCreateSolicitud = () => {
+    if (!newSolicitud.titulo) return alert("Completa el título.")
     
-    // Creamos el objeto de solicitud actualizado
-    const updatedSolicitud = { 
-      titulo, solicitante, tipoParticipacion, ciudad, pais, lugar, fechaSalida, fechaRegreso, 
-      horaSalida, horaRegreso, numeroPersonas, necesitaTransporte, cantidadCombustible, programaEducativo,
-      proyectoInvestigacion, obtendraConstancia, comentarios,
-      status: "En revisión" 
-    }
-
-    // Si la solicitud estaba en "Devueltas", la movemos a "Pendientes"
-    if (tab === "Devueltas") {
-      // Eliminamos la solicitud de "Devueltas"
-      const newDevueltasList = solicitudesPorTab.Devueltas.filter((_, i) => i !== index)
-      
-      // Añadimos la solicitud actualizada a "Pendientes"
-      const newPendientesList = [...solicitudesPorTab.Pendientes, updatedSolicitud]
-      
-      setSolicitudesPorTab({ 
-        ...solicitudesPorTab, 
-        Devueltas: newDevueltasList,
-        Pendientes: newPendientesList
-      })
-
-      // Cambiamos a la pestaña Pendientes para ver la solicitud
-      setActiveTab("Pendientes")
-    } else {
-      // Si no es de "Devueltas", actualizamos en la pestaña actual
-      const updatedList = [...solicitudesPorTab[tab]]
-      updatedList[index] = updatedSolicitud
-      
-      setSolicitudesPorTab({ ...solicitudesPorTab, [tab]: updatedList })
-    }
+    // Generar ID único para la comisión
+    const year = new Date().getFullYear()
+    const count = solicitudesPorTab.Pendientes.length + 
+                  solicitudesPorTab.Aprobadas.length + 
+                  solicitudesPorTab.Rechazadas.length + 
+                  solicitudesPorTab.Devueltas.length + 1
+    const id = `COM-${year}-${count.toString().padStart(3, '0')}`
     
-    // Cerramos el modal
+    setSolicitudesPorTab(prev => ({
+      ...prev,
+      Pendientes: [...prev.Pendientes, {...newSolicitud, id}]
+    }))
+    setNewSolicitud(emptySolicitud)
+    setShowCreateModal(false)
+    setActiveTabComisiones("Pendientes")
+  }
+
+  const handleSaveEditSolicitud = () => {
+    const { tab, index, ...s } = modalEditData
+    const lista = [...solicitudesPorTab[tab]]
+    lista[index] = s
+    setSolicitudesPorTab(prev => ({ ...prev, [tab]: lista }))
     setModalEditData(null)
   }
 
-  const handleCreateSolicitud = () => {
-    // Validación básica (podrías agregar más validaciones según necesites)
-    if (!newSolicitud.titulo || !newSolicitud.ciudad || !newSolicitud.pais || !newSolicitud.lugar || 
-        !newSolicitud.fechaSalida || !newSolicitud.fechaRegreso) {
-      alert("Por favor completa todos los campos obligatorios");
-      return;
-    }
-    
-    // Agregar la nueva solicitud a las pendientes
-    const updatedPendientes = [...solicitudesPorTab.Pendientes, newSolicitud];
-    
-    setSolicitudesPorTab({
-      ...solicitudesPorTab,
-      Pendientes: updatedPendientes
-    });
-    
-    // Cambiar a la pestaña de pendientes para ver la nueva solicitud
-    setActiveTab("Pendientes");
-    
-    // Limpiar el formulario y cerrar el modal
-    setNewSolicitud({
-      titulo: "",
-      solicitante: "Fernando Huerta",
-      tipoParticipacion: "Asistente",
-      ciudad: "",
-      pais: "",
-      lugar: "",
-      fechaSalida: "",
-      fechaRegreso: "",
-      horaSalida: "",
-      horaRegreso: "", 
-      numeroPersonas: 1,
-      necesitaTransporte: false,
-      cantidadCombustible: 0,
-      programaEducativo: "Ingeniería en Computación",
-      proyectoInvestigacion: false,
-      obtendraConstancia: true,
-      comentarios: "",
-      status: "En revisión"
-    });
-    
-    setShowCreateModal(false);
+  const confirmDeleteSolicitud = () => {
+    const { tab, index } = modalEditData
+    const lista = [...solicitudesPorTab[tab]]
+    lista.splice(index, 1)
+    setSolicitudesPorTab(prev => ({ ...prev, [tab]: lista }))
+    setShowDeleteConfirm(false)
+    setModalEditData(null)
   }
 
-  const handleDeleteClick = () => {
-    setShowDeleteConfirm(true);
-  };
+  /* ──────────────── Estado: REPORTES ──────────────── */
+  const emptyReporte = {
+    id          : "",  // ID único para el reporte
+    titulo      : "",
+    solicitante : "Fernando Huerta",
+    descripcion : "",
+    fechaEntrega: "",
+    evidencia   : null,
+    status      : "En revisión"
+  }
 
-  const confirmDelete = () => {
-    const { tab, index } = modalEditData;
-    
-    // Eliminamos la solicitud del arreglo correspondiente
-    const updatedList = [...solicitudesPorTab[tab]];
-    updatedList.splice(index, 1);
-    
-    setSolicitudesPorTab({
-      ...solicitudesPorTab,
-      [tab]: updatedList
-    });
-    
-    // Cerramos ambos modales
-    setShowDeleteConfirm(false);
-    setModalEditData(null);
-  };
+  const [showCreateReporteModal, setShowCreateReporteModal] = useState(false)
+  const [modalEditReporte,       setModalEditReporte]       = useState(null) // { reporte, index, tab }
+  const [nuevoReporte,           setNuevoReporte]           = useState(emptyReporte)
+  const [reportesPorTab,         setReportesPorTab]         = useState({
+    Pendientes : [],
+    Aprobados  : [],
+    Rechazados : [],
+    Devueltos  : []
+  })
 
-  const cancelDelete = () => {
-    setShowDeleteConfirm(false);
-  };
-    return (
+  /* CRUD Reportes */
+  const handleCreateReporte = () => {
+    if (!nuevoReporte.titulo || !nuevoReporte.descripcion || !nuevoReporte.fechaEntrega)
+      return alert("Completa los campos obligatorios.")
+    
+    // Generar ID único para el reporte
+    const year = new Date().getFullYear()
+    const count = reportesPorTab.Pendientes.length + 
+                  reportesPorTab.Aprobados.length + 
+                  reportesPorTab.Rechazados.length + 
+                  reportesPorTab.Devueltos.length + 1
+    const id = `REP-${year}-${count.toString().padStart(3, '0')}`
+    
+    setReportesPorTab(prev => ({
+      ...prev,
+      Pendientes: [...prev.Pendientes, {...nuevoReporte, id}]
+    }))
+    setNuevoReporte(emptyReporte)
+    setShowCreateReporteModal(false)
+    setActiveTabReportes("Pendientes")
+  }
+
+  const handleSaveEditReporte = () => {
+    const { tab, index, ...r } = modalEditReporte
+    const lista = [...reportesPorTab[tab]]
+    lista[index] = r
+    setReportesPorTab(prev => ({ ...prev, [tab]: lista }))
+    setModalEditReporte(null)
+  }
+
+  const handleDeleteReporte = () => {
+    const { tab, index } = modalEditReporte
+    const lista = [...reportesPorTab[tab]]
+    lista.splice(index, 1)
+    setReportesPorTab(prev => ({ ...prev, [tab]: lista }))
+    setModalEditReporte(null)
+  }
+
+  /* ──────────────── UI helpers ──────────────── */
+  const statusColors = {
+    "En revisión": { text: "text-yellow-700", bg: "bg-yellow-100" },
+    Aprobada     : { text: "text-green-700",  bg: "bg-green-100"  },
+    Aprobado     : { text: "text-green-700",  bg: "bg-green-100"  },
+    Rechazada    : { text: "text-red-700",    bg: "bg-red-100"    },
+    Rechazado    : { text: "text-red-700",    bg: "bg-red-100"    },
+    Devuelta     : { text: "text-orange-700", bg: "bg-orange-100" },
+    Devuelto     : { text: "text-orange-700", bg: "bg-orange-100" }
+  }
+
+  /* ──────────────── Listas visibles ──────────────── */
+  const solicitudesActivas = solicitudesPorTab[activeTabComisiones] || []
+  const reportesActivos    = reportesPorTab[activeTabReportes]     || []
+
+  /* ──────────────── Render ──────────────── */
+  return (
     <div className="flex h-screen w-full font-sans overflow-hidden">
-      {/* Sidebar Component */}
-      <Sidebar 
-        activeSection={activeSection} 
-        setActiveSection={setActiveSection} 
-        sidebarOpen={sidebarOpen} 
-        toggleSidebar={toggleSidebar} 
+      {/* Sidebar */}
+      <Sidebar
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+        sidebarOpen={sidebarOpen}
+        toggleSidebar={toggleSidebar}
         confirmLogout={confirmLogout}
       />
-      
-      {/* Main Content */}
-      <div className={`flex-1 bg-white p-8 flex flex-col transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
-        {/* Header Component */}
-        <Header 
-          activeSection={activeSection} 
-          setActiveSection={setActiveSection} 
-          setShowCreateModal={setShowCreateModal}
-        />
 
-        {/* Título dinámico según la sección activa */}
-        <h2 className="text-2xl font-bold mb-6">
-          {activeSection === "Comisiones" ? "Mis solicitudes" : "Mis reportes"}
-        </h2>
+      {/* Contenedor principal */}
+      <div className={`flex-1 bg-white p-8 flex flex-col transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
+        {/* Header (oculto en Perfil) */}
+        {activeSection !== "Perfil" && (
+          <Header
+            activeSection={activeSection}
+            setActiveSection={setActiveSection}
+            setShowCreateModal={setShowCreateModal}
+            setShowCreateReporteModal={setShowCreateReporteModal}
+          />
+        )}
 
-        {/* Contenido condicional según la sección */}
-        {activeSection === "Comisiones" ? (
+        {/* Titular dinámico */}
+        {activeSection !== "Perfil" && (
+          <h2 className="text-2xl font-bold mb-6">
+            {activeSection === "Comisiones" ? "Mis solicitudes" : "Mis reportes"}
+          </h2>
+        )}
+
+        {/* ----- SECCIÓN COMISIONES ----- */}
+        {activeSection === "Comisiones" && (
           <>
-            {/* TabSelector Component */}
-            <TabSelector 
-              tabs={tabs} 
-              activeTab={activeTab} 
-              setActiveTab={setActiveTab} 
+            <TabSelector
+              tabs={tabsComisiones}
+              activeTab={activeTabComisiones}
+              setActiveTab={setActiveTabComisiones}
             />
 
-            {/* Lista de Solicitudes */}
             <div className="space-y-4 flex-1 overflow-y-auto">
               {solicitudesActivas.length > 0 ? (
-                solicitudesActivas.map((solicitud, index) => (
-                  <SolicitudCard 
-                    key={index}
+                solicitudesActivas.map((solicitud, i) => (
+                  <SolicitudCard
+                    key={i}
                     solicitud={solicitud}
-                    index={index}
+                    index={i}
                     statusColors={statusColors}
-                    handleEditClick={handleEditClick}
+                    handleEditClick={() =>
+                      setModalEditData({ ...solicitud, index: i, tab: activeTabComisiones })
+                    }
                   />
                 ))
               ) : (
-                <div className="text-center py-10 text-gray-500">
-                  No hay solicitudes {activeTab.toLowerCase()}
-                </div>
-              )}
-
-              {/* Espacios vacíos solo si no hay suficientes solicitudes reales */}
-              {solicitudesActivas.length === 0 && (
-                [...Array(2)].map((_, i) => (
-                  <div key={i} className="bg-gray-100 rounded-xl px-4 py-6 h-[60px]" />
-                ))
+                <p className="text-center py-10 text-gray-500">
+                  No hay solicitudes {activeTabComisiones.toLowerCase()}
+                </p>
               )}
             </div>
           </>
-        ) : (
-          // Contenido para la sección de Reportes
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <div className="text-gray-500 text-lg mb-4">Sección de Reportes</div>
-            <p className="text-gray-400 text-center">
-              Esta sección está en desarrollo.<br />
-              Aquí podrás ver todos tus reportes de comisiones académicas.
-            </p>
-          </div>
         )}
+
+        {/* ----- SECCIÓN REPORTES ----- */}
+        {activeSection === "Reportes" && (
+          <>
+            <TabSelector
+              tabs={tabsReportes}
+              activeTab={activeTabReportes}
+              setActiveTab={setActiveTabReportes}
+            />
+
+            <div className="space-y-4 flex-1 overflow-y-auto">
+              {reportesActivos.length > 0 ? (
+                reportesActivos.map((reporte, i) => (
+                  <ReportCard
+                    key={i}
+                    reporte={reporte}
+                    index={i}
+                    statusColors={statusColors}
+                    handleEdit={() =>
+                      setModalEditReporte({ ...reporte, index: i, tab: activeTabReportes })
+                    }
+                  />
+                ))
+              ) : (
+                <p className="text-center py-10 text-gray-500">
+                  No hay reportes {activeTabReportes.toLowerCase()}
+                </p>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ----- SECCIÓN PERFIL ----- */}
+        {activeSection === "Perfil" && <ProfileSection />}
       </div>
 
-      {/* Modal Components */}
-      <CreateSolicitudModal 
+      {/* ────────── Modales COMISIONES ────────── */}
+      <CreateSolicitudModal
         showCreateModal={showCreateModal}
         setShowCreateModal={setShowCreateModal}
         newSolicitud={newSolicitud}
@@ -313,23 +313,44 @@ export default function SolicitudesInterface({ setIsAuthenticated }) {
         programasEducativos={programasEducativos}
       />
 
-      <EditSolicitudModal
-        modalEditData={modalEditData}
-        setModalEditData={setModalEditData}
-        handleSaveEdit={handleSaveEdit}
-        handleDeleteClick={handleDeleteClick}
-        tiposParticipacion={tiposParticipacion}
-        programasEducativos={programasEducativos}
-      />
+      {modalEditData && (
+        <EditSolicitudModal
+          modalEditData={modalEditData}
+          setModalEditData={setModalEditData}
+          handleSaveEdit={handleSaveEditSolicitud}
+          handleDeleteClick={() => setShowDeleteConfirm(true)}
+          tiposParticipacion={tiposParticipacion}
+          programasEducativos={programasEducativos}
+        />
+      )}
 
       <DeleteConfirmModal
         showDeleteConfirm={showDeleteConfirm}
-        cancelDelete={cancelDelete}
-        confirmDelete={confirmDelete}
+        cancelDelete={() => setShowDeleteConfirm(false)}
+        confirmDelete={confirmDeleteSolicitud}
       />
 
+      {/* ────────── Modales REPORTES ────────── */}
+      <CreateReporteModal
+        show={showCreateReporteModal}
+        close={() => setShowCreateReporteModal(false)}
+        nuevoReporte={nuevoReporte}
+        setNuevoReporte={setNuevoReporte}
+        guardarReporte={handleCreateReporte}
+      />
+
+      {modalEditReporte && (
+        <EditReporteModal
+          modalData={modalEditReporte}
+          setModalData={setModalEditReporte}
+          guardarCambios={handleSaveEditReporte}
+          eliminar={handleDeleteReporte}
+        />
+      )}
+
+      {/* Logout */}
       <LogoutConfirmModal
-        showLogoutConfirm={showLogoutConfirm}
+        showLogoutConfirm={showLogout}
         cancelLogout={cancelLogout}
         handleLogout={handleLogout}
       />

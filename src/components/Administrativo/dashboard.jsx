@@ -3,198 +3,223 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 
-// Importamos los componentes
-import Sidebar from "../Docente/components/Sidebar"
-import MainContent from "./components/MainContent"
-import ReviewSolicitudModal from "./components/ReviewSolicitudModal"
+/* ── Componentes compartidos ─ */
+import Sidebar            from "../Docente/components/Sidebar"
 import LogoutConfirmModal from "../Docente/components/LogoutConfirmModal"
 
+/* ── Componentes propios ──── */
+import MainContent          from "./components/MainContent"
+import ReviewSolicitudModal from "./components/ReviewSolicitudModal"
+import ReviewReporteModal   from "./components/ReviewReporteModal"
+
 export default function AdminDashboard({ setIsAuthenticated }) {
-  const [activeTab, setActiveTab] = useState("Pendientes")
-  const [activeSection, setActiveSection] = useState("Comisiones")
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [modalReviewData, setModalReviewData] = useState(null)
-  const [showReviewModal, setShowReviewModal] = useState(false)
-
+  /* ------------- UI general ------------- */
   const navigate = useNavigate()
+  const [activeSection, setActiveSection] = useState("Comisiones")      // "Comisiones" | "Reportes"
+  const tabsComisiones = ["Pendientes", "Aprobadas", "Rechazadas", "Devueltas"]
+  const tabsReportes   = ["Pendientes", "Aprobados", "Rechazados", "Devueltos"]
+  const [activeTabComisiones, setActiveTabComisiones] = useState("Pendientes")
+  const [activeTabReportes,   setActiveTabReportes]   = useState("Pendientes")
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showLogout,  setShowLogout]  = useState(false)
 
-  const tabs = ["Pendientes", "Aprobadas", "Rechazadas", "Devueltas"]
-
-  // Datos de ejemplo para solicitudes
+  /* ------------- COMISIONES ------------- */
   const [solicitudesPorTab, setSolicitudesPorTab] = useState({
     Pendientes: [
       {
-        titulo: "Congreso Nacional de Sistemas Computacionales",
-        solicitante: "Carlos Rodríguez",
+        titulo    : "Congreso Nacional de Ingeniería",
+        solicitante: "María Pérez",
         tipoParticipacion: "Ponente",
-        ciudad: "Ciudad de México",
-        pais: "México",
-        lugar: "Centro de Convenciones",
-        fechaSalida: "2023-06-15",
-        fechaRegreso: "2023-06-20",
-        horaSalida: "08:00",
-        horaRegreso: "20:00",
-        numeroPersonas: 1,
-        necesitaTransporte: true,
-        cantidadCombustible: 500,
-        programaEducativo: "Ingeniería en Computación",
-        proyectoInvestigacion: true,
-        obtendraConstancia: true,
-        comentarios: "Presentación de artículo científico",
-        status: "En revisión"
-      },
-      {
-        titulo: "Taller de Innovación Industrial",
-        solicitante: "Ana López",
-        tipoParticipacion: "Asistente",
-        ciudad: "Tijuana",
-        pais: "México",
-        lugar: "UABC",
-        fechaSalida: "2023-07-10",
-        fechaRegreso: "2023-07-12",
-        horaSalida: "09:00",
-        horaRegreso: "18:00",
-        numeroPersonas: 2,
-        necesitaTransporte: false,
-        cantidadCombustible: 0,
-        programaEducativo: "Ingeniería Industrial",
-        proyectoInvestigacion: false,
-        obtendraConstancia: true,
-        comentarios: "",
-        status: "En revisión"
+        fechaSalida : "2025-07-02",
+        fechaRegreso: "2025-07-06",
+        ciudad : "Monterrey",
+        pais   : "México",
+        status : "En revisión"
       }
     ],
     Aprobadas: [],
     Rechazadas: [],
-    Devueltas: []
+    Devueltas : []
   })
+  const [modalSolicitud, setModalSolicitud] = useState(null) // { tab, index, solicitud }
 
-  const handleLogoutClick = () => {
-    setShowLogoutConfirm(true)
+  const handleReviewSolicitud = (tab, index, solicitud) =>
+    setModalSolicitud({ tab, index, solicitud: { ...solicitud } })
+
+  const moveSolicitud = (from, to, index, extra = {}) => {
+    setSolicitudesPorTab(prev => {
+      const data = { ...prev }
+      const item = { ...data[from][index], ...extra }
+      data[from] = data[from].filter((_, i) => i !== index)
+      data[to]   = [...data[to], item]
+      return data
+    })
   }
 
-  const confirmLogout = () => {
-    setShowLogoutConfirm(false)
-    setIsAuthenticated(false)
-    navigate('/')
+  const approveRequest = (tab, index, comments) => {
+    moveSolicitud(tab, "Aprobadas", index, {
+      status: "Aprobada",
+      ...(comments ? { comentariosAdmin: comments } : {})
+    })
+    setActiveTabComisiones("Aprobadas")
   }
 
-  const cancelLogout = () => {
-    setShowLogoutConfirm(false)
-  }
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen)
-  }
-
-  const handleReviewClick = (tab, index, solicitud) => {
-    setModalReviewData({ tab, index, solicitud: { ...solicitud } })
-    setShowReviewModal(true)
-  }
-
-  // Función para aprobar una solicitud
-  const approveRequest = (tab, index) => {
-    const updatedSolicitudes = { ...solicitudesPorTab }
-    const solicitud = { ...updatedSolicitudes[tab][index] }
-    
-    solicitud.status = "Aprobada"
-    
-    // Eliminar de la pestaña actual
-    updatedSolicitudes[tab] = updatedSolicitudes[tab].filter((_, i) => i !== index)
-    
-    // Agregar a la pestaña de aprobadas
-    updatedSolicitudes.Aprobadas = [...updatedSolicitudes.Aprobadas, solicitud]
-    
-    setSolicitudesPorTab(updatedSolicitudes)
-    setShowReviewModal(false)
-    setModalReviewData(null)
-  }
-
-  // Función para rechazar una solicitud
   const rejectRequest = (tab, index, comments) => {
-    const updatedSolicitudes = { ...solicitudesPorTab }
-    const solicitud = { ...updatedSolicitudes[tab][index] }
-    
-    solicitud.status = "Rechazada"
-    solicitud.comentariosAdmin = comments
-    
-    // Eliminar de la pestaña actual
-    updatedSolicitudes[tab] = updatedSolicitudes[tab].filter((_, i) => i !== index)
-    
-    // Agregar a la pestaña de rechazadas
-    updatedSolicitudes.Rechazadas = [...updatedSolicitudes.Rechazadas, solicitud]
-    
-    setSolicitudesPorTab(updatedSolicitudes)
-    setShowReviewModal(false)
-    setModalReviewData(null)
+    moveSolicitud(tab, "Rechazadas", index, {
+      status: "Rechazada",
+      comentariosAdmin: comments
+    })
+    setActiveTabComisiones("Rechazadas")
   }
 
-  // Función para devolver una solicitud para correcciones
   const returnRequest = (tab, index, comments) => {
-    const updatedSolicitudes = { ...solicitudesPorTab }
-    const solicitud = { ...updatedSolicitudes[tab][index] }
-    
-    solicitud.status = "Devuelta"
-    solicitud.comentariosAdmin = comments
-    
-    // Eliminar de la pestaña actual
-    updatedSolicitudes[tab] = updatedSolicitudes[tab].filter((_, i) => i !== index)
-    
-    // Agregar a la pestaña de devueltas
-    updatedSolicitudes.Devueltas = [...updatedSolicitudes.Devueltas, solicitud]
-    
-    setSolicitudesPorTab(updatedSolicitudes)
-    setShowReviewModal(false)
-    setModalReviewData(null)
+    moveSolicitud(tab, "Devueltas", index, {
+      status: "Devuelta",
+      comentariosAdmin: comments
+    })
+    setActiveTabComisiones("Devueltas")
   }
 
-  const solicitudesActivas = solicitudesPorTab[activeTab] || []
+  /* ------------- REPORTES ------------- */
+  const [reportesPorTab, setReportesPorTab] = useState({
+    Pendientes: [
+      {
+        titulo      : "Informe Congreso de Sistemas Computacionales",
+        solicitante : "Carlos Rodríguez",
+        descripcion : "Se presentó un artículo sobre IA aplicada a robótica.",
+        fechaEntrega: "2025-06-25",
+        evidencia   : null,
+        status      : "En revisión"
+      }
+    ],
+    Aprobados : [],
+    Rechazados: [],
+    Devueltos : []
+  })
+  const [modalReporte, setModalReporte] = useState(null) // { tab, index, reporte }
 
+  const handleReviewReporte = (tab, index, reporte) =>
+    setModalReporte({ tab, index, reporte: { ...reporte } })
+
+  const moveReporte = (from, to, index, extra = {}) => {
+    setReportesPorTab(prev => {
+      const data = { ...prev }
+      const item = { ...data[from][index], ...extra }
+      data[from] = data[from].filter((_, i) => i !== index)
+      data[to]   = [...data[to], item]
+      return data
+    })
+  }
+
+  const approveReporte = (tab, index, comments) => {
+    moveReporte(tab, "Aprobados", index, {
+      status: "Aprobado",
+      ...(comments ? { comentariosAdmin: comments } : {})
+    })
+    setActiveTabReportes("Aprobados")
+  }
+
+  const rejectReporte = (tab, index, comments) => {
+    moveReporte(tab, "Rechazados", index, {
+      status: "Rechazado",
+      comentariosAdmin: comments
+    })
+    setActiveTabReportes("Rechazados")
+  }
+
+  const returnReporte = (tab, index, comments) => {
+    moveReporte(tab, "Devueltos", index, {
+      status: "Devuelto",
+      comentariosAdmin: comments
+    })
+    setActiveTabReportes("Devueltos")
+  }
+
+  /* ------------- Auxiliares UI ------------- */
+  const toggleSidebar   = () => setSidebarOpen(!sidebarOpen)
+  const showLogoutModal = () => setShowLogout(true)
+  const hideLogoutModal = () => setShowLogout(false)
+  const handleLogout    = () => {
+    setIsAuthenticated(false)
+    navigate("/login")
+  }
+
+  /* Listas visibles */
+  const solicitudesActivas = solicitudesPorTab[activeTabComisiones] || []
+  const reportesActivos    = reportesPorTab[activeTabReportes]     || []
+
+  /* ------------- Render ------------- */
   return (
     <div className="flex h-screen w-full font-sans overflow-hidden">
-      {/* Sidebar Component */}
-      <Sidebar 
-        activeSection={activeSection} 
-        setActiveSection={setActiveSection} 
-        sidebarOpen={sidebarOpen} 
-        toggleSidebar={toggleSidebar} 
-        confirmLogout={handleLogoutClick}
+      <Sidebar
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+        sidebarOpen={sidebarOpen}
+        toggleSidebar={toggleSidebar}
+        confirmLogout={showLogoutModal}
       />
-      
-      {/* Main Content Component */}
-      <MainContent 
+
+      <MainContent
         sidebarOpen={sidebarOpen}
         activeSection={activeSection}
         setActiveSection={setActiveSection}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        tabs={tabs}
+        activeTab={
+          activeSection === "Comisiones" ? activeTabComisiones : activeTabReportes
+        }
+        setActiveTab={
+          activeSection === "Comisiones"
+            ? setActiveTabComisiones
+            : setActiveTabReportes
+        }
+        tabs={activeSection === "Comisiones" ? tabsComisiones : tabsReportes}
         solicitudesActivas={solicitudesActivas}
-        handleReviewClick={handleReviewClick}
+        reportesActivos={reportesActivos}
+        handleReviewSolicitud={handleReviewSolicitud}
+        handleReviewReporte={handleReviewReporte}
       />
 
-      {/* Modales */}
-      {showReviewModal && modalReviewData && (
+      {/* Modal SOLICITUD */}
+      {modalSolicitud && (
         <ReviewSolicitudModal
-          isOpen={showReviewModal}
-          onClose={() => {
-            setShowReviewModal(false)
-            setModalReviewData(null)
-          }}
-          solicitud={modalReviewData.solicitud}
-          onApprove={() => approveRequest(modalReviewData.tab, modalReviewData.index)}
-          onReject={(comments) => rejectRequest(modalReviewData.tab, modalReviewData.index, comments)}
-          onReturn={(comments) => returnRequest(modalReviewData.tab, modalReviewData.index, comments)}
+          isOpen
+          onClose={() => setModalSolicitud(null)}
+          solicitud={modalSolicitud.solicitud}
+          onApprove={(c) =>
+            approveRequest(modalSolicitud.tab, modalSolicitud.index, c)
+          }
+          onReject={(c) =>
+            rejectRequest(modalSolicitud.tab, modalSolicitud.index, c)
+          }
+          onReturn={(c) =>
+            returnRequest(modalSolicitud.tab, modalSolicitud.index, c)
+          }
         />
-      )}      {/* Modal de confirmación de cierre de sesión */}
+      )}
+
+      {/* Modal REPORTE */}
+      {modalReporte && (
+        <ReviewReporteModal
+          isOpen
+          onClose={() => setModalReporte(null)}
+          reporte={modalReporte.reporte}
+          onApprove={(c) =>
+            approveReporte(modalReporte.tab, modalReporte.index, c)
+          }
+          onReject={(c) =>
+            rejectReporte(modalReporte.tab, modalReporte.index, c)
+          }
+          onReturn={(c) =>
+            returnReporte(modalReporte.tab, modalReporte.index, c)
+          }
+        />
+      )}
+
+      {/* Logout */}
       <LogoutConfirmModal
-        showLogoutConfirm={showLogoutConfirm}
-        cancelLogout={cancelLogout}
-        handleLogout={confirmLogout}
+        showLogoutConfirm={showLogout}
+        cancelLogout={hideLogoutModal}
+        handleLogout={handleLogout}
       />
     </div>
   )
 }
-
-

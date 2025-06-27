@@ -1,0 +1,108 @@
+"use client"
+
+import { useState } from "react"
+import PropTypes from "prop-types"
+
+export default function ReviewReporteModal({
+  isOpen,
+  onClose,
+  reporte,
+  onApprove,
+  onReject,
+  onReturn
+}) {
+  const [comments, setComments] = useState("")
+  const [processing, setProcessing] = useState(false) // evita duplicados
+
+  if (!isOpen) return null
+
+  const handleAction = (action) => {
+    if (processing) return
+    setProcessing(true)
+    action(comments)   // pasa comentarios si aplica
+    onClose()          // cierra de inmediato
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <h2 className="text-2xl font-bold mb-6">{reporte.titulo}</h2>
+
+          {/* Datos principales */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <h3 className="font-semibold mb-2">Datos del solicitante</h3>
+              <p><span className="font-medium">Solicitante:</span> {reporte.solicitante}</p>
+              <p><span className="font-medium">Fecha de entrega:</span> {reporte.fechaEntrega}</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Estado del reporte</h3>
+              <p><span className="font-medium">Status:</span> {reporte.status}</p>
+              {reporte.evidencia && (
+                <p className="text-sm text-blue-600 mt-1">Archivo adjunto</p>
+              )}
+            </div>
+          </div>
+
+          {/* Descripción */}
+          <div className="mb-6">
+            <h3 className="font-semibold mb-2">Descripción / resultados</h3>
+            <p className="bg-gray-50 p-3 rounded">{reporte.descripcion}</p>
+          </div>
+
+          {/* Comentarios */}
+          <div className="mb-6">
+            <label className="block font-semibold mb-2">Comentarios administrativos</label>
+            <textarea
+              className="w-full border border-gray-300 rounded-md p-2 min-h-[100px]"
+              placeholder="Ingrese sus comentarios…"
+              value={comments}
+              onChange={(e) => setComments(e.target.value)}
+            />
+          </div>
+
+          {/* Botones */}
+          <div className="flex flex-wrap gap-3 justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+            >
+              Cancelar
+            </button>
+            <button
+              disabled={processing}
+              onClick={() => handleAction(onReturn)}
+              className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 disabled:opacity-60"
+            >
+              Devolver para corrección
+            </button>
+            <button
+              disabled={processing}
+              onClick={() => handleAction(onReject)}
+              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-60"
+            >
+              Rechazar
+            </button>
+            <button
+              disabled={processing}
+              onClick={() => handleAction(onApprove)}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-60"
+            >
+              Aprobar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+ReviewReporteModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  reporte: PropTypes.object.isRequired,
+  onApprove: PropTypes.func.isRequired,
+  onReject: PropTypes.func.isRequired,
+  onReturn: PropTypes.func.isRequired
+}
