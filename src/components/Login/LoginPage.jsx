@@ -17,8 +17,12 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
   const navigate = useNavigate()
   
   const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log(`${mode === "login" ? "Iniciando sesión" : "Registrando"} con:`, email, password, "como", userType)
+    e.preventDefault();
+    
+    // Concatenar el dominio al correo si no está presente
+    const fullEmail = email.includes('@') ? email : `${email}@uabc.edu.mx`;
+    
+    console.log(`${mode === "login" ? "Iniciando sesión" : "Registrando"} con:`, fullEmail, password, "como", userType)
 
     if (email && password) {
       // Actualizar el estado de autenticación y el rol del usuario
