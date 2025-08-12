@@ -3,6 +3,7 @@
 import ComisionesSection from "./ComisionesSection"
 import ReportesSection   from "./ReportesSection"
 import Header            from "./Header"
+import { useTheme } from "../../../context/ThemeContext"
 
 export default function MainContent({
   /* Layout */
@@ -17,12 +18,13 @@ export default function MainContent({
   /* Callbacks de revisión */
   handleReviewSolicitud,
   handleReviewReporte
-}) {
+}) {  const { darkMode } = useTheme();
+
   return (
     <div
-      className={`flex-1 bg-white p-8 flex flex-col transition-all duration-300 ${
+      className={`flex-1 p-8 flex flex-col transition-all duration-300 ${
         sidebarOpen ? "ml-64" : "ml-0"
-      }`}
+      } ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}
     >
       {/* Header */}
       <Header

@@ -7,33 +7,10 @@ export default function Sidebar({
   toggleSidebar,
   confirmLogout
 }) {
+  // Ya no necesitamos darkMode aquí ya que eliminamos el menú hamburguesa
+  
   return (
     <>
-      {/* Botón hamburguesa */}
-      <label
-        htmlFor="nav-toggle"
-        className="fixed top-4 left-4 z-50 cursor-pointer"
-        onClick={toggleSidebar}
-      >
-        <div
-          className={`bar transition-all duration-300 ${
-            sidebarOpen ? "bg-white" : "bg-green-800"
-          }`}
-        ></div>
-        <div
-          className={`bar transition-all duration-300 ${
-            sidebarOpen ? "bg-white w-0" : "bg-green-800"
-          }`}
-        ></div>
-        <div
-          className={`bar transition-all duration-300 ${
-            sidebarOpen
-              ? "bg-white transform -translate-y-2 -rotate-45"
-              : "bg-green-800"
-          }`}
-        ></div>
-      </label>
-
       {/* Sidebar */}
       <div
         className={`fixed top-0 left-0 h-full w-64 bg-green-800 transform transition-transform duration-300 ease-in-out z-40 ${
@@ -73,9 +50,8 @@ export default function Sidebar({
           >
             Cerrar sesión
           </button>
-        </div>
-      </div>
-
+        </div>      </div>
+      
       {/* Pestaña lateral (sidebar cerrado) */}
       {!sidebarOpen && (
         <div

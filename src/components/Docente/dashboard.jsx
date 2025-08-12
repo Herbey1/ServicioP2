@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { useTheme } from "../../context/ThemeContext"
 
 /* Layout y navegación */
 import Sidebar             from "./components/Sidebar"
@@ -30,6 +31,7 @@ import LogoutConfirmModal  from "./components/LogoutConfirmModal"
 export default function DashboardDocente({ setIsAuthenticated }) {
   /* ──────────────── Navegación y UI global ──────────────── */
   const navigate = useNavigate()
+  const { darkMode } = useTheme();
   const [activeSection, setActiveSection] = useState("Comisiones") // Comisiones | Reportes | Perfil
   const [sidebarOpen,   setSidebarOpen]   = useState(false)
   const [showLogout,    setShowLogout]    = useState(false)
@@ -37,9 +39,14 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   const toggleSidebar   = () => setSidebarOpen(!sidebarOpen)
   const confirmLogout   = () => setShowLogout(true)
   const cancelLogout    = () => setShowLogout(false)
-  const handleLogout    = () => {
-    setIsAuthenticated(false)
-    navigate("/login")
+  const handleLogout = () => {
+    // Si está en modo oscuro, lo cambiamos a modo claro antes de cerrar sesión
+    if (darkMode) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('darkMode', 'false');
+    }
+    setIsAuthenticated(false);
+    navigate("/login");
   }
 
   /* ──────────────── Tabs comunes ──────────────── */
@@ -200,14 +207,13 @@ export default function DashboardDocente({ setIsAuthenticated }) {
     Devuelta     : { text: "text-orange-700", bg: "bg-orange-100" },
     Devuelto     : { text: "text-orange-700", bg: "bg-orange-100" }
   }
-
   /* ──────────────── Listas visibles ──────────────── */
   const solicitudesActivas = solicitudesPorTab[activeTabComisiones] || []
   const reportesActivos    = reportesPorTab[activeTabReportes]     || []
 
   /* ──────────────── Render ──────────────── */
   return (
-    <div className="flex h-screen w-full font-sans overflow-hidden">
+    <div className={`flex h-screen w-full font-sans overflow-hidden ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
       {/* Sidebar */}
       <Sidebar
         activeSection={activeSection}
@@ -218,7 +224,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       />
 
       {/* Contenedor principal */}
-      <div className={`flex-1 bg-white p-8 flex flex-col transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
+      <div className={`flex-1 p-8 flex flex-col transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"} ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}>
         {/* Header (oculto en Perfil) */}
         {activeSection !== "Perfil" && (
           <Header
