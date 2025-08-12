@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import LoginPage from './components/Login/LoginPage';
 import SolicitudesInterface from './components/Docente/dashboard';
 import AdminDashboard from './components/Administrativo/dashboard';
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {  // Inicializar el estado de autenticación y el rol desde localStorage
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -25,20 +26,24 @@ function App() {  // Inicializar el estado de autenticación y el rol desde loca
   }, [userRole]);
 
   return (
-    <Router>      <Routes>        <Route path="/login" element={
-          isAuthenticated ? <Navigate to={userRole === 'docente' ? "/dashboard" : "/admin"} /> : <LoginPage setIsAuthenticated={setIsAuthenticated} setUserRole={setUserRole} />
-        } />
-        <Route 
-          path="/dashboard" 
-          element={isAuthenticated ? <SolicitudesInterface setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />} 
-        />
-        <Route 
-          path="/admin" 
-          element={isAuthenticated ? <AdminDashboard setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />} 
-        />
-        <Route path="/" element={<Navigate to={isAuthenticated ? (userRole === 'docente' ? "/dashboard" : "/admin") : "/login"} />} />
-      </Routes>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={
+            isAuthenticated ? <Navigate to={userRole === 'docente' ? "/dashboard" : "/admin"} /> : <LoginPage setIsAuthenticated={setIsAuthenticated} setUserRole={setUserRole} />
+          } />
+          <Route 
+            path="/dashboard" 
+            element={isAuthenticated ? <SolicitudesInterface setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/admin" 
+            element={isAuthenticated ? <AdminDashboard setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />} 
+          />
+          <Route path="/" element={<Navigate to={isAuthenticated ? (userRole === 'docente' ? "/dashboard" : "/admin") : "/login"} />} />
+        </Routes>
+      </Router>
+    </ThemeProvider>
   )
 }
 
