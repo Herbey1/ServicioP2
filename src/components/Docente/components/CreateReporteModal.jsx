@@ -2,6 +2,7 @@
 
 import PropTypes from "prop-types"
 import { useRef } from "react"
+import { useTheme } from "../../../context/ThemeContext"
 
 export default function CreateReporteModal({
   show,
@@ -11,7 +12,15 @@ export default function CreateReporteModal({
   guardarReporte
 }) {
   const fileInputRef = useRef(null)
-
+  const { darkMode } = useTheme();
+  
+  // Clases adaptativas para el modo oscuro
+  const labelClass = `block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`;
+  const inputClass = `w-full rounded-lg px-3 py-2 ${darkMode ? 'border border-gray-600 bg-gray-700 text-white' : 'border border-gray-300 bg-white'}`;
+  const textClass = darkMode ? 'text-white' : 'text-gray-900';
+  const buttonPrimaryClass = `px-6 py-2 bg-green-700 text-white font-medium rounded-full hover:bg-green-800`;
+  const buttonSecondaryClass = `px-6 py-2 font-medium rounded-full ${darkMode ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`;
+  
   if (!show) return null
 
   /* —— handlers internos —— */
@@ -33,16 +42,15 @@ export default function CreateReporteModal({
     if (fileInputRef.current) fileInputRef.current.value = ""
     close()
   }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white w-full max-w-3xl rounded-xl p-8 shadow-lg max-h-[90vh] overflow-y-auto">
+      <div className={`${darkMode ? 'bg-gray-800 text-white' : 'bg-white'} w-full max-w-3xl rounded-xl p-8 shadow-lg max-h-[90vh] overflow-y-auto`}>
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 border-b pb-3">
-          <h2 className="text-xl font-bold">Crear reporte</h2>
+        <div className={`flex justify-between items-center mb-6 border-b pb-3 ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+          <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Crear reporte</h2>
           <button
             onClick={resetAndClose}
-            className="text-gray-500 hover:text-gray-700"
+            className={`${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
             aria-label="Cerrar"
           >
             ×
@@ -50,10 +58,9 @@ export default function CreateReporteModal({
         </div>
 
         {/* Formulario */}
-        <div className="grid grid-cols-1 gap-6">
-          {/* Título */}
+        <div className="grid grid-cols-1 gap-6">          {/* Título */}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className={labelClass}>
               Asunto de la comisión <span className="text-red-600">*</span>
             </label>
             <input
@@ -61,15 +68,13 @@ export default function CreateReporteModal({
               name="titulo"
               value={nuevoReporte.titulo}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              className={inputClass}
               placeholder="Ej. Congreso Nacional de Ingeniería"
               required
             />
-          </div>
-
-          {/* Descripción */}
+          </div>          {/* Descripción */}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className={labelClass}>
               Descripción / Resultados <span className="text-red-600">*</span>
             </label>
             <textarea
@@ -77,7 +82,7 @@ export default function CreateReporteModal({
               rows="4"
               value={nuevoReporte.descripcion}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              className={inputClass}
               placeholder="Resumen de actividades realizadas, logros obtenidos, etc."
               required
             ></textarea>
@@ -85,7 +90,7 @@ export default function CreateReporteModal({
 
           {/* Fecha */}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className={labelClass}>
               Fecha de entrega <span className="text-red-600">*</span>
             </label>
             <input
@@ -93,14 +98,12 @@ export default function CreateReporteModal({
               name="fechaEntrega"
               value={nuevoReporte.fechaEntrega}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              className={inputClass}
               required
             />
-          </div>
-
-          {/* Evidencia */}
+          </div>          {/* Evidencia */}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className={labelClass}>
               Evidencia (PDF o ZIP)
             </label>
             <input
@@ -108,22 +111,20 @@ export default function CreateReporteModal({
               accept=".pdf,.zip"
               ref={fileInputRef}
               onChange={handleFileChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              className={inputClass}
             />
           </div>
-        </div>
-
-        {/* Botones */}
+        </div>        {/* Botones */}
         <div className="mt-8 flex justify-end gap-4">
           <button
             onClick={resetAndClose}
-            className="px-5 py-2 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium"
+            className={buttonSecondaryClass + " text-sm"}
           >
             Cancelar
           </button>
           <button
             onClick={guardarReporte}
-            className="px-5 py-2 rounded-full bg-green-700 hover:bg-green-800 text-white text-sm font-medium"
+            className={buttonPrimaryClass + " text-sm"}
           >
             Guardar
           </button>
