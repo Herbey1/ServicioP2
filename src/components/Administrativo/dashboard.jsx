@@ -161,6 +161,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         sidebarOpen={sidebarOpen}
         toggleSidebar={toggleSidebar}
         confirmLogout={showLogoutModal}
+        showProfile={false}
       />
 
       <MainContent

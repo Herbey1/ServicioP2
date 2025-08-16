@@ -13,7 +13,6 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [userType, setUserType] = useState("docente")
-  const [mode, setMode] = useState("login") 
   const navigate = useNavigate()
   
   const handleSubmit = (e) => {
@@ -22,7 +21,7 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
     // Concatenar el dominio al correo si no está presente
     const fullEmail = email.includes('@') ? email : `${email}@uabc.edu.mx`;
     
-    console.log(`${mode === "login" ? "Iniciando sesión" : "Registrando"} con:`, fullEmail, password, "como", userType)
+    console.log("Iniciando sesión con:", fullEmail, password, "como", userType)
 
     if (email && password) {
       // Actualizar el estado de autenticación y el rol del usuario
@@ -43,21 +42,19 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
   return (
     <div className="flex h-screen w-full">
       {/* Sidebar con imagen y botones de selección de modo */}
-      <LoginSidebar mode={mode} setMode={setMode} />
+      <LoginSidebar />
 
       {/* Formulario principal */}
       <div className="w-2/3 flex items-center justify-center bg-gray-100">
         <div className="w-[450px] p-8">
           {/* Cabecera con logo y títulos */}
-          <LoginHeader mode={mode} />
+          <LoginHeader />
 
           {/* Selector de tipo de usuario */}
           <UserTypeSelector userType={userType} setUserType={setUserType} />
 
           {/* Formulario de login */}
           <LoginForm
-            mode={mode}
-            setMode={setMode}
             email={email}
             setEmail={setEmail}
             password={password}

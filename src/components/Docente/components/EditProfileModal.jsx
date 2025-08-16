@@ -57,7 +57,7 @@ export default function EditProfileModal({ open, close, profile, save }) {
             return (
               <div key={label}>
                 <label className={`block text-sm font-medium capitalize mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  {label === "categoria" ? "Categoría" : label}
+                    {label === "categoria" ? "Categoría" : label === "departamento" ? "Programa educativo" : label}
                 </label>
                 <input                  name={label}
                   value={value}

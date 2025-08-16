@@ -27,7 +27,7 @@ export default function ProfileSection() {
           {Object.entries(profile).map(([label, value]) => (
             <div key={label}>
               <dt className={`text-sm font-medium capitalize ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                {label === "categoria" ? "Categoría" : label}
+                {label === "categoria" ? "Categoría" : label === "departamento" ? "Programa educativo" : label}
               </dt>
               <dd className={`text-lg font-semibold break-all ${darkMode ? 'text-white' : 'text-gray-900'}`}>{value}</dd>
             </div>
