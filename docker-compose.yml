@@ -29,5 +29,23 @@ services:
       - ./backend:/app
       - /app/node_modules
 
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: sgca_frontend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      REACT_APP_API_URL: http://backend:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_started
+    volumes:
+      - .:/app
+      - /app/node_modules
+
 volumes:
   sgca_pgdata:
