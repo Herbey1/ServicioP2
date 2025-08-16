@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useTheme } from "../../context/ThemeContext"
+import { apiFetch } from "../../api/client"
 
 /* ── Componentes compartidos ─ */
 import Sidebar            from "../Docente/components/Sidebar"
@@ -27,23 +28,41 @@ export default function AdminDashboard({ setIsAuthenticated }) {
 
   /* ------------- COMISIONES ------------- */
   const [solicitudesPorTab, setSolicitudesPorTab] = useState({
-    Pendientes: [
-      {
-        titulo    : "Congreso Nacional de Ingeniería",
-        solicitante: "María Pérez",
-        tipoParticipacion: "Ponente",
-        fechaSalida : "2025-07-02",
-        fechaRegreso: "2025-07-06",
-        ciudad : "Monterrey",
-        pais   : "México",
-        status : "En revisión"
-      }
-    ],
+    Pendientes: [],
     Aprobadas: [],
     Rechazadas: [],
-    Devueltas : []
+    Devueltas: []
   })
   const [modalSolicitud, setModalSolicitud] = useState(null) // { tab, index, solicitud }
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const resp = await apiFetch('/api/solicitudes');
+        const grouped = { Pendientes: [], Aprobadas: [], Rechazadas: [], Devueltas: [] };
+        const estadoMap = {
+          EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+          APROBADA: { tab: 'Aprobadas', status: 'Aprobada' },
+          RECHAZADA: { tab: 'Rechazadas', status: 'Rechazada' },
+          DEVUELTA: { tab: 'Devueltas', status: 'Devuelta' }
+        };
+        (resp.items || []).forEach(item => {
+          const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
+          grouped[map.tab].push({
+            id: item.id,
+            titulo: item.asunto,
+            solicitante: item.usuarios?.nombre || item.docente_id,
+            fechaSalida: item.fecha_salida?.slice(0,10),
+            status: map.status
+          });
+        });
+        setSolicitudesPorTab(grouped);
+      } catch (e) {
+        console.error('Error cargando solicitudes', e);
+      }
+    }
+    load();
+  }, []);
 
   const handleReviewSolicitud = (tab, index, solicitud) =>
     setModalSolicitud({ tab, index, solicitud: { ...solicitud } })
@@ -84,19 +103,10 @@ export default function AdminDashboard({ setIsAuthenticated }) {
 
   /* ------------- REPORTES ------------- */
   const [reportesPorTab, setReportesPorTab] = useState({
-    Pendientes: [
-      {
-        titulo      : "Informe Congreso de Sistemas Computacionales",
-        solicitante : "Carlos Rodríguez",
-        descripcion : "Se presentó un artículo sobre IA aplicada a robótica.",
-        fechaEntrega: "2025-06-25",
-        evidencia   : null,
-        status      : "En revisión"
-      }
-    ],
+    Pendientes: [],
     Aprobados : [],
     Rechazados: [],
-    Devueltos : []
+    Devueltos: []
   })
   const [modalReporte, setModalReporte] = useState(null) // { tab, index, reporte }
 
@@ -140,11 +150,13 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   const showLogoutModal = () => setShowLogout(true)
   const hideLogoutModal = () => setShowLogout(false)
   const handleLogout    = () => {
-    // Si está en modo oscuro, lo cambiamos a modo claro antes de cerrar sesión
     if (darkMode) {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('darkMode', 'false');
     }
+    localStorage.removeItem('token');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userName');
     setIsAuthenticated(false)
     navigate("/login")
   }

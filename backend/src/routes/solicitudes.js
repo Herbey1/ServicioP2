@@ -59,7 +59,8 @@ export default function solicitudesRouter(prisma) {
         prisma.solicitudes.findMany({
           where,
           orderBy: { created_at: "desc" },
-          skip, take
+          skip, take,
+          include: { usuarios: { select: { nombre:true }}}
         })
       ]);
 

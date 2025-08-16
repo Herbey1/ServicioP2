@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-
+import { apiFetch } from "../../api/client"
 // Componentes
 import LoginSidebar from "./components/LoginSidebar"
 import LoginHeader from "./components/LoginHeader"
@@ -15,27 +15,35 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
   const [userType, setUserType] = useState("docente")
   const navigate = useNavigate()
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Concatenar el dominio al correo si no está presente
+
     const fullEmail = email.includes('@') ? email : `${email}@uabc.edu.mx`;
     
-    console.log("Iniciando sesión con:", fullEmail, password, "como", userType)
-
-    if (email && password) {
-      // Actualizar el estado de autenticación y el rol del usuario
-      setIsAuthenticated(true)
-      setUserRole(userType === "administrador" ? "admin" : "docente")
-      
-      // Redirigir según el tipo de usuario
-      if (userType === "docente") {
-        navigate('/dashboard')
-      } else if (userType === "administrador") {
-        navigate('/admin')
-      }
-    } else {
+    if (!email || !password){
       console.log("Por favor, completa todos los campos")
+      return;
+    }
+
+    try {
+      const data = await apiFetch("/api/auth/login", {
+        method: "POST",
+        body: { correo: fullEmail, password }
+      });
+
+      if (data?.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userName', data.user.nombre);
+        const rol = data.user.rol === 'ADMIN' ? 'admin' : 'docente';
+        setIsAuthenticated(true);
+        setUserRole(rol);
+        if (rol === 'docente') navigate('/dashboard');
+        else navigate('/admin');
+     } else {
+      console.log("Credenciales inválidas");
+     }
+    } catch (err) {
+      console.error("Error al iniciar sesión", err);
     }
   }
 

@@ -9,20 +9,15 @@ import { ThemeProvider } from './context/ThemeContext';
 
 function App() {  // Inicializar el estado de autenticación y el rol desde localStorage
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('isAuthenticated') === 'true'
-  });
-  
-  const [userRole, setUserRole] = useState(() => {
-    return localStorage.getItem('userRole') || 'docente'
+    return !!localStorage.getItem('token');
   });
 
-  // Guardar el estado de autenticación y rol en localStorage cuando cambien
-  useEffect(() => {
-    localStorage.setItem('isAuthenticated', isAuthenticated)
-  }, [isAuthenticated]);
+  const [userRole, setUserRole] = useState(() => {
+    return localStorage.getItem('userRole') || 'docente';
+  });
   
   useEffect(() => {
-    localStorage.setItem('userRole', userRole)
+    localStorage.setItem('userRole', userRole);
   }, [userRole]);
 
   return (

@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useTheme } from "../../context/ThemeContext"
+import { apiFetch } from "../../api/client"
 
 /* Layout y navegación */
 import Sidebar             from "./components/Sidebar"
@@ -45,6 +46,9 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('darkMode', 'false');
     }
+    localStorage.removeItem('token');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userName');
     setIsAuthenticated(false);
     navigate("/login");
   }
@@ -99,6 +103,36 @@ export default function DashboardDocente({ setIsAuthenticated }) {
     Rechazadas : [],
     Devueltas  : []
   })
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const resp = await apiFetch('/api/solicitudes');
+        const grouped = { Pendientes: [], Aprobadas: [], Rechazadas: [], Devueltas: [] };
+        const userName = localStorage.getItem('userName') || '';
+        const estadoMap = {
+          EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+          APROBADA: { tab: 'Aprobadas', status: 'Aprobada' },
+          RECHAZADA: { tab: 'Rechazadas', status: 'Rechazada' },
+          DEVUELTA: { tab: 'Devueltas', status: 'Devuelta' }
+        };
+        (resp.items || []).forEach(item => {
+          const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
+          grouped[map.tab].push({
+            id: item.id,
+            titulo: item.asunto,
+            solicitante: item.usuarios?.nombre || userName,
+            fechaSalida: item.fecha_salida?.slice(0,10),
+            status: map.status
+          });
+        });
+        setSolicitudesPorTab(grouped);
+      } catch (e) {
+        console.error('Error cargando solicitudes', e);
+      }
+    }
+    load();
+  }, []);
 
   /* CRUD Comisiones */
   const handleCreateSolicitud = () => {
