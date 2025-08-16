@@ -22,6 +22,9 @@
 ## Credenciales admin para la app
 - **Usuario**: `admin@uabc.edu.mx`
 - **Password**: `WkdbdY45LFtvoBdhfcGkGQ`
+## Credenciales docente para la app
+  - **Usuario**: `docente@uabc.edu.mx`
+  - **Password**: `Docente123!`
 
 > *Nota:* estas credenciales son de ejemplo para desarrollo. Cambia la contraseña en cuanto conectes el backend.
 
