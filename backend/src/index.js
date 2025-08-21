@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
 import authRouter from "./routes/auth.js";
 import solicitudesRouter from "./routes/solicitudes.js";
+import reportesRouter from "./routes/reportes.js";
 import { requireAuth, requireRole } from "./middleware/auth.js";
 
 dotenv.config();

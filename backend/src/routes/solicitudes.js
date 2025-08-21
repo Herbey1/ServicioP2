@@ -60,9 +60,13 @@ export default function solicitudesRouter(prisma) {
           where,
           orderBy: { created_at: "desc" },
           skip, take,
-          include: { usuarios: { select: { nombre:true }}}
+          include: { docente: { select: { nombre:true }}}
         })
       ]);
+      const solicitudes = items.map(item => ({
+        ...item,
+        solicitante: item.docente?.nombre || item.docente_id,
+      }));
 
       res.json({ total, page: asInt(page) || 1, size: take, items });
     } catch (e) {
