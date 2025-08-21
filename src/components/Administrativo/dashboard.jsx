@@ -35,57 +35,61 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   })
   const [modalSolicitud, setModalSolicitud] = useState(null) // { tab, index, solicitud }
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const resp = await apiFetch('/api/solicitudes');
-        const grouped = { Pendientes: [], Aprobadas: [], Rechazadas: [], Devueltas: [] };
-        const estadoMap = {
-          EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-          APROBADA: { tab: 'Aprobadas', status: 'Aprobada' },
-          RECHAZADA: { tab: 'Rechazadas', status: 'Rechazada' },
-          DEVUELTA: { tab: 'Devueltas', status: 'Devuelta' }
-        };
-        (resp.items || []).forEach(item => {
-          const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
-          grouped[map.tab].push({
-            id: item.id,
-            titulo: item.asunto,
-            solicitante: item.usuarios?.nombre || item.docente_id,
-            fechaSalida: item.fecha_salida?.slice(0,10),
-            status: map.status
-          });
+  const loadSolicitudes = async () => {
+    try {
+      const resp = await apiFetch('/api/solicitudes');
+      const grouped = { Pendientes: [], Aprobadas: [], Rechazadas: [], Devueltas: [] };
+      const estadoMap = {
+        EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+        APROBADA: { tab: 'Aprobadas', status: 'Aprobada' },
+        RECHAZADA: { tab: 'Rechazadas', status: 'Rechazada' },
+        DEVUELTA: { tab: 'Devueltas', status: 'Devuelta' }
+      };
+      (resp.items || []).forEach(item => {
+        const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
+        grouped[map.tab].push({
+          id: item.id,
+          titulo: item.asunto,
+          solicitante: item.usuarios?.nombre || item.docente_id,
+          fechaSalida: item.fecha_salida?.slice(0,10),
+          status: map.status
         });
-        setSolicitudesPorTab(grouped);
-      } catch (e) {
-        console.error('Error cargando solicitudes', e);
-      }
+      });
+      setSolicitudesPorTab(grouped);
+    } catch (e) {
+      console.error('Error cargando solicitudes', e);
     }
-    load();
+  }
+  useEffect(() => {
+    loadSolicitudes();
   }, []);
 
   const handleReviewSolicitud = (tab, index, solicitud) =>
     setModalSolicitud({ tab, index, solicitud: { ...solicitud } })
 
-  const moveSolicitud = (from, to, index, extra = {}) => {
-    setSolicitudesPorTab(prev => {
-      const data = { ...prev }
-      const item = { ...data[from][index], ...extra }
-      data[from] = data[from].filter((_, i) => i !== index)
-      data[to]   = [...data[to], item]
-      return data
-    })
+  const changeEstado = async (id, estado, motivo) => {
+    try {
+      await apiFetch(`/api/solicitudes/${id}/estado`, {
+        method: 'PATCH',
+        body: { estado, motivo }
+      })
+      return true
+    } catch (e) {
+      console.error('Error cambiando estado', e)
+      return false
+    }
   }
 
-  const approveRequest = (tab, index, comments) => {
-    moveSolicitud(tab, "Aprobadas", index, {
-      status: "Aprobada",
-      ...(comments ? { comentariosAdmin: comments } : {})
-    })
+  const approveRequest = async (tab, index, comments) => {
+    const sol = solicitudesPorTab[tab][index]
+    if (!await changeEstado(sol.id, 'APROBADA', comments)) return
+    await loadSolicitudes()
     setActiveTabComisiones("Aprobadas")
   }
 
-  const rejectRequest = (tab, index, comments) => {
+  const rejectRequest = async (tab, index, comments) => {
+    const sol = solicitudesPorTab[tab][index]
+    if (!await changeEstado(sol.id, 'RECHAZADA', comments)) return
     moveSolicitud(tab, "Rechazadas", index, {
       status: "Rechazada",
       comentariosAdmin: comments
@@ -93,7 +97,9 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     setActiveTabComisiones("Rechazadas")
   }
 
-  const returnRequest = (tab, index, comments) => {
+  const returnRequest = async (tab, index, comments) => {
+    const sol = solicitudesPorTab[tab][index]
+    if (!await changeEstado(sol.id, 'DEVUELTA', comments)) return
     moveSolicitud(tab, "Devueltas", index, {
       status: "Devuelta",
       comentariosAdmin: comments
@@ -110,8 +116,53 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   })
   const [modalReporte, setModalReporte] = useState(null) // { tab, index, reporte }
 
+  useEffect(() => {
+    async function loadReportes() {
+      try {
+        // Asumiendo que tienes un endpoint /api/reportes
+        const resp = await apiFetch('/api/reportes'); 
+        const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
+
+        // Mapeo de estados de la base de datos a las pestañas de la UI
+        const estadoMap = {
+          EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+          APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
+          RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' }, // Asegúrate que este estado exista en tu enum de reportes
+          DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
+        };
+        
+        (resp.items || []).forEach(item => {
+          // Asegúrate que 'item.estado' y 'item.usuarios.nombre' existan en la respuesta de tu API
+          const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
+          grouped[map.tab].push({
+            id: item.id,
+            titulo: item.asunto || "Reporte de Comisión", // Ajusta según el campo correcto
+            solicitante: item.usuarios?.nombre || item.docente_id,
+            fechaEntrega: item.fecha_entrega?.slice(0,10) || "N/A",
+            status: map.status,
+            descripcion: item.descripcion || ""
+          });
+        });
+        setReportesPorTab(grouped);
+      } catch (e) {
+        console.error('Error cargando reportes', e);
+      }
+    }
+    loadReportes();
+  }, []);
+
   const handleReviewReporte = (tab, index, reporte) =>
     setModalReporte({ tab, index, reporte: { ...reporte } })
+
+  const moveSolicitud = (from, to, index, extra = {}) => {
+    setSolicitudesPorTab(prev => {
+      const data = { ...prev }
+      const item = { ...data[from][index], ...extra }
+      data[from] = data[from].filter((_, i) => i !== index)
+      data[to]   = [...data[to], item]
+      return data
+    })
+  }
 
   const moveReporte = (from, to, index, extra = {}) => {
     setReportesPorTab(prev => {

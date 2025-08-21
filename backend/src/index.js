@@ -12,6 +12,8 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 
+
+
 // === ruta absoluta a /uploads
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,6 +44,9 @@ app.use("/api/auth", authRouter(prisma));
 
 // Solicitudes (todas requieren login)
 app.use("/api/solicitudes", requireAuth, solicitudesRouter(prisma));
+
+// Reportes (todas requieren login)
+app.use("/api/reportes", requireAuth, reportesRouter(prisma));
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => console.log(`API on http://localhost:${port}`));

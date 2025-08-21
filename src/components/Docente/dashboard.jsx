@@ -64,8 +64,8 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   const emptySolicitud = {
     id: "", // ID único para la comisión
     titulo: "",
-    solicitante: "Fernando Huerta",
-    tipoParticipacion: "Asistente",
+    solicitante: typeof window !== 'undefined' ? (localStorage.getItem('userName') || "") : "",
+    tipoParticipacionId: null,
     ciudad: "",
     pais: "",
     lugar: "",
@@ -76,22 +76,15 @@ export default function DashboardDocente({ setIsAuthenticated }) {
     numeroPersonas: 1,
     necesitaTransporte: false,
     cantidadCombustible: 0,
-    programaEducativo: "Ingeniería en Computación",
+    programaEducativoId: null,
     proyectoInvestigacion: false,
     obtendraConstancia: true,
     comentarios: "",
     status: "En revisión"
   }
 
-  const tiposParticipacion  = ["Ponente", "Asistente", "Organizador", "Jurado", "Otro"]
-  const programasEducativos = [
-    "Ingeniería Industrial",
-    "Ingeniería Civil",
-    "Ingeniería en Computación",
-    "Ingeniería Química",
-    "Ingeniería Electrónica",
-    "Bioingeniería"
-  ]
+  const [tiposParticipacion, setTiposParticipacion] = useState([])
+  const [programasEducativos, setProgramasEducativos] = useState([])
 
   const [showCreateModal,   setShowCreateModal]   = useState(false)
   const [modalEditData,     setModalEditData]     = useState(null)   // { solicitud, index, tab }
@@ -107,7 +100,12 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   useEffect(() => {
     async function load() {
       try {
-        const resp = await apiFetch('/api/solicitudes');
+        const [resp, tipos, programas] = await Promise.all([
+          apiFetch('/api/solicitudes'),
+          apiFetch('/api/catalogos/tipos-participacion'),
+          apiFetch('/api/catalogos/programas')
+        ]);
+
         const grouped = { Pendientes: [], Aprobadas: [], Rechazadas: [], Devueltas: [] };
         const userName = localStorage.getItem('userName') || '';
         const estadoMap = {
@@ -127,47 +125,93 @@ export default function DashboardDocente({ setIsAuthenticated }) {
           });
         });
         setSolicitudesPorTab(grouped);
+        setTiposParticipacion(tipos);
+        setProgramasEducativos(programas);
+        setNewSolicitud(prev => ({
+          ...prev,
+          tipoParticipacionId: tipos[0]?.id || null,
+          programaEducativoId: programas[0]?.id || null,
+        }));
       } catch (e) {
-        console.error('Error cargando solicitudes', e);
+        console.error('Error cargando datos iniciales', e);
       }
     }
     load();
   }, []);
 
   /* CRUD Comisiones */
-  const handleCreateSolicitud = () => {
+  const handleCreateSolicitud = async () => {
     if (!newSolicitud.titulo) return alert("Completa el título.")
-    
-    // Generar ID único para la comisión
-    const year = new Date().getFullYear()
-    const count = solicitudesPorTab.Pendientes.length + 
-                  solicitudesPorTab.Aprobadas.length + 
-                  solicitudesPorTab.Rechazadas.length + 
-                  solicitudesPorTab.Devueltas.length + 1
-    const id = `COM-${year}-${count.toString().padStart(3, '0')}`
-    
-    setSolicitudesPorTab(prev => ({
-      ...prev,
-      Pendientes: [...prev.Pendientes, {...newSolicitud, id}]
-    }))
-    setNewSolicitud(emptySolicitud)
-    setShowCreateModal(false)
-    setActiveTabComisiones("Pendientes")
+
+    try {
+      const body = {
+        asunto: newSolicitud.titulo,
+        tipo_participacion_id: newSolicitud.tipoParticipacionId,
+        ciudad: newSolicitud.ciudad,
+        pais: newSolicitud.pais,
+        lugar: newSolicitud.lugar,
+        fecha_salida: newSolicitud.fechaSalida,
+        hora_salida: newSolicitud.horaSalida,
+        fecha_regreso: newSolicitud.fechaRegreso,
+        hora_regreso: newSolicitud.horaRegreso,
+        num_personas: newSolicitud.numeroPersonas,
+        usa_unidad_transporte: newSolicitud.necesitaTransporte,
+        cantidad_combustible: newSolicitud.cantidadCombustible,
+        programa_educativo_id: newSolicitud.programaEducativoId,
+        alumnos_beneficiados: 0,
+        proyecto_investigacion: newSolicitud.proyectoInvestigacion,
+        obtendra_constancia: newSolicitud.obtendraConstancia,
+        comentarios: newSolicitud.comentarios
+      }
+      const resp = await apiFetch('/api/solicitudes', { method: 'POST', body })
+      const id = resp.id || resp?.solicitud?.id
+
+      setSolicitudesPorTab(prev => ({
+        ...prev,
+        Pendientes: [...prev.Pendientes, { ...newSolicitud, id }]
+      }))
+      setNewSolicitud({
+        ...emptySolicitud,
+        tipoParticipacionId: tiposParticipacion[0]?.id || null,
+        programaEducativoId: programasEducativos[0]?.id || null,
+      })
+      setShowCreateModal(false)
+      setActiveTabComisiones("Pendientes")
+    } catch (e) {
+      console.error('Error creando solicitud', e)
+      alert('Error creando solicitud')
+    }
   }
 
-  const handleSaveEditSolicitud = () => {
-    const { tab, index, ...s } = modalEditData
-    const lista = [...solicitudesPorTab[tab]]
-    lista[index] = s
-    setSolicitudesPorTab(prev => ({ ...prev, [tab]: lista }))
-    setModalEditData(null)
+  const handleSaveEditSolicitud = async () => {
+    const { tab, index, id, ...s } = modalEditData
+    try {
+      await apiFetch(`/api/solicitudes/${id}`, {
+        method: 'PATCH',
+        body: {
+          asunto: s.titulo,
+          comentarios: s.comentarios
+        }
+      })
+      const lista = [...solicitudesPorTab[tab]]
+      lista[index] = { ...s, id }
+      setSolicitudesPorTab(prev => ({ ...prev, [tab]: lista }))
+      setModalEditData(null)
+    } catch (e) {
+      console.error('Error actualizando solicitud', e)
+    }
   }
 
-  const confirmDeleteSolicitud = () => {
-    const { tab, index } = modalEditData
-    const lista = [...solicitudesPorTab[tab]]
-    lista.splice(index, 1)
-    setSolicitudesPorTab(prev => ({ ...prev, [tab]: lista }))
+  const confirmDeleteSolicitud = async () => {
+    const { tab, index, id } = modalEditData
+    try {
+      await apiFetch(`/api/solicitudes/${id}/cancelar`, { method: 'POST' })
+      const lista = [...solicitudesPorTab[tab]]
+      lista.splice(index, 1)
+      setSolicitudesPorTab(prev => ({ ...prev, [tab]: lista }))
+    } catch (e) {
+      console.error('Error cancelando solicitud', e)
+    }
     setShowDeleteConfirm(false)
     setModalEditData(null)
   }
@@ -197,15 +241,15 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   const handleCreateReporte = () => {
     if (!nuevoReporte.titulo || !nuevoReporte.descripcion || !nuevoReporte.fechaEntrega)
       return alert("Completa los campos obligatorios.")
-    
+
     // Generar ID único para el reporte
     const year = new Date().getFullYear()
-    const count = reportesPorTab.Pendientes.length + 
-                  reportesPorTab.Aprobados.length + 
-                  reportesPorTab.Rechazados.length + 
+    const count = reportesPorTab.Pendientes.length +
+                  reportesPorTab.Aprobados.length +
+                  reportesPorTab.Rechazados.length +
                   reportesPorTab.Devueltos.length + 1
     const id = `REP-${year}-${count.toString().padStart(3, '0')}`
-    
+
     setReportesPorTab(prev => ({
       ...prev,
       Pendientes: [...prev.Pendientes, {...nuevoReporte, id}]

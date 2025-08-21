@@ -2,17 +2,17 @@
 
 import { useTheme } from "../../../context/ThemeContext";
 
-export default function CreateSolicitudModal({ 
-  showCreateModal, 
-  setShowCreateModal, 
-  newSolicitud, 
-  setNewSolicitud, 
-  handleCreateSolicitud, 
-  tiposParticipacion, 
-  programasEducativos 
+export default function CreateSolicitudModal({
+  showCreateModal,
+  setShowCreateModal,
+  newSolicitud,
+  setNewSolicitud,
+  handleCreateSolicitud,
+  tiposParticipacion,
+  programasEducativos
 }) {
   const { darkMode } = useTheme();
-  
+
   // Funciones para generar clases adaptadas al modo oscuro
   const labelClass = `block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`;
   const inputClass = `w-full rounded-lg px-3 py-2 ${darkMode ? 'border border-gray-600 bg-gray-700 text-white' : 'border border-gray-300 bg-white'}`;
@@ -26,7 +26,7 @@ export default function CreateSolicitudModal({
         <div className={`${darkMode ? 'bg-gray-800 text-white' : 'bg-white'} p-6 rounded-xl shadow-lg w-[800px] max-h-[90vh] overflow-y-auto`}>
           <div className={`flex justify-between items-center mb-6 pb-2 border-b ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
             <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Crear solicitud</h3>
-            <button 
+            <button
               onClick={() => setShowCreateModal(false)}
               className={`${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
             >
@@ -35,7 +35,7 @@ export default function CreateSolicitudModal({
               </svg>
             </button>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             {/* Información del solicitante */}
             <div className="col-span-2 mb-2">              <div className="flex justify-between">
@@ -49,7 +49,7 @@ export default function CreateSolicitudModal({
                 </div>
               </div>
             </div>
-            
+
             {/* Título de la comisión */}
             <div className="col-span-2">              <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Asunto: <span className="text-red-500">*</span>
@@ -63,18 +63,19 @@ export default function CreateSolicitudModal({
                 required
               />
             </div>
-            
+
             {/* Tipo de participación (selector) */}
-            <div>              <label className={labelClass}>
+            <div>
+              <label className={labelClass}>
                 Tipo de participación: <span className="text-red-500">*</span>
               </label>
               <select
                 className={inputClass}
-                value={newSolicitud.tipoParticipacion}
-                onChange={(e) => setNewSolicitud({ ...newSolicitud, tipoParticipacion: e.target.value })}
+                value={newSolicitud.tipoParticipacionId ?? ""}
+                onChange={(e) => setNewSolicitud({ ...newSolicitud, tipoParticipacionId: parseInt(e.target.value) })}
               >
                 {tiposParticipacion.map(tipo => (
-                  <option key={tipo} value={tipo}>{tipo}</option>
+                  <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
                 ))}
               </select>
             </div>
@@ -129,7 +130,7 @@ export default function CreateSolicitudModal({
                 required
               />
             </div>
-            
+
             <div>
               <label className={labelClass}>
                 Fecha de regreso: <span className="text-red-500">*</span>
@@ -155,7 +156,7 @@ export default function CreateSolicitudModal({
                 required
               />
             </div>
-            
+
             <div>
               <label className={labelClass}>
                 Hora de regreso: <span className="text-red-500">*</span>
@@ -189,7 +190,7 @@ export default function CreateSolicitudModal({
               </label>
               <div className="flex gap-4 mt-2">
                 <label className="inline-flex items-center">
-                  <input 
+                  <input
                     type="radio"
                     className="form-radio text-green-700"
                     name="necesitaTransporteNuevo"
@@ -199,7 +200,7 @@ export default function CreateSolicitudModal({
                   <span className={`ml-2 ${textClass}`}>Sí</span>
                 </label>
                 <label className="inline-flex items-center">
-                  <input 
+                  <input
                     type="radio"
                     className="form-radio text-green-700"
                     name="necesitaTransporteNuevo"
@@ -232,12 +233,12 @@ export default function CreateSolicitudModal({
               </label>
               <select
                 className={inputClass}
-                value={newSolicitud.programaEducativo}
-                onChange={(e) => setNewSolicitud({ ...newSolicitud, programaEducativo: e.target.value })}
+                value={newSolicitud.programaEducativoId ?? ""}
+                onChange={(e) => setNewSolicitud({ ...newSolicitud, programaEducativoId: parseInt(e.target.value) })}
                 required
               >
                 {programasEducativos.map(programa => (
-                  <option key={programa} value={programa}>{programa}</option>
+                  <option key={programa.id} value={programa.id}>{programa.nombre}</option>
                 ))}
               </select>
             </div>
@@ -248,7 +249,7 @@ export default function CreateSolicitudModal({
               </label>
               <div className="flex gap-4 mt-2">
                 <label className="inline-flex items-center">
-                  <input 
+                  <input
                     type="radio"
                     className="form-radio text-green-700"
                     name="proyectoInvestigacionNuevo"
@@ -258,7 +259,7 @@ export default function CreateSolicitudModal({
                   <span className={`ml-2 ${textClass}`}>Sí</span>
                 </label>
                 <label className="inline-flex items-center">
-                  <input 
+                  <input
                     type="radio"
                     className="form-radio text-green-700"
                     name="proyectoInvestigacionNuevo"
@@ -276,7 +277,7 @@ export default function CreateSolicitudModal({
               </label>
               <div className="flex gap-4 mt-2">
                 <label className="inline-flex items-center">
-                  <input 
+                  <input
                     type="radio"
                     className="form-radio text-green-700"
                     name="obtendraConstanciaNuevo"
@@ -286,7 +287,7 @@ export default function CreateSolicitudModal({
                   <span className={`ml-2 ${textClass}`}>Sí</span>
                 </label>
                 <label className="inline-flex items-center">
-                  <input 
+                  <input
                     type="radio"
                     className="form-radio text-green-700"
                     name="obtendraConstanciaNuevo"
