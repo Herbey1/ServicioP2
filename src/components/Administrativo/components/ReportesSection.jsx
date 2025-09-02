@@ -2,12 +2,15 @@
 
 import TabSelector from "../../Docente/components/TabSelector"
 import ReportCard  from "./ReportCard"
+import SkeletonList from "../../common/SkeletonList"
 
 export default function ReportesSection({
   activeTab,
   setActiveTab,
   tabs,
   reportesActivos,
+  loading = false,
+  counts = {},
   handleReviewClick
 }) {
   return (
@@ -17,11 +20,14 @@ export default function ReportesSection({
         tabs={tabs}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        counts={counts}
       />
 
       {/* Lista de reportes */}
       <div className="space-y-4 flex-1 overflow-y-auto">
-        {reportesActivos.length > 0 ? (
+        {loading ? (
+          <SkeletonList rows={4} />
+        ) : reportesActivos.length > 0 ? (
           reportesActivos.map((reporte, index) => (
             <ReportCard
               key={index}

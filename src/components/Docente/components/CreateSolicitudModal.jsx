@@ -22,13 +22,15 @@ export default function CreateSolicitudModal({
   const buttonSecondaryClass = `px-6 py-2 font-medium rounded-full ${darkMode ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`;
 
   return (
-    showCreateModal && (      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    showCreateModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="crear-solicitud-title">
         <div className={`${darkMode ? 'bg-gray-800 text-white' : 'bg-white'} p-6 rounded-xl shadow-lg w-[800px] max-h-[90vh] overflow-y-auto`}>
           <div className={`flex justify-between items-center mb-6 pb-2 border-b ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-            <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Crear solicitud</h3>
+            <h3 id="crear-solicitud-title" className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Crear solicitud</h3>
             <button
               onClick={() => setShowCreateModal(false)}
               className={`${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
+              aria-label="Cerrar"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -36,6 +38,7 @@ export default function CreateSolicitudModal({
             </button>
           </div>
 
+          <form onSubmit={handleCreateSolicitud} noValidate>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             {/* Información del solicitante */}
             <div className="col-span-2 mb-2">              <div className="flex justify-between">
@@ -322,19 +325,10 @@ export default function CreateSolicitudModal({
           </div>
             {/* Botones de acción */}
           <div className="flex justify-end mt-6 gap-3">
-            <button
-              onClick={() => setShowCreateModal(false)}
-              className={buttonSecondaryClass + " text-sm"}
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleCreateSolicitud}
-              className={buttonPrimaryClass + " text-sm"}
-            >
-              Aceptar
-            </button>
+            <button type="button" onClick={() => setShowCreateModal(false)} className={buttonSecondaryClass + " text-sm"}>Cancelar</button>
+            <button type="submit" className={buttonPrimaryClass + " text-sm"}>Aceptar</button>
           </div>
+          </form>
         </div>
       </div>
     )

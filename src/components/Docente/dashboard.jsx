@@ -28,11 +28,15 @@ import ProfileSection      from "./components/ProfileSection"
 
 /* Logout */
 import LogoutConfirmModal  from "./components/LogoutConfirmModal"
+import SkeletonList from "../common/SkeletonList";
+import ErrorBoundary from "../common/ErrorBoundary";
+import { useToast } from "../../context/ToastContext";
 
 export default function DashboardDocente({ setIsAuthenticated }) {
   /* ──────────────── Navegación y UI global ──────────────── */
   const navigate = useNavigate()
   const { darkMode } = useTheme();
+  const { showToast } = useToast();
   const [activeSection, setActiveSection] = useState("Comisiones") // Comisiones | Reportes | Perfil
   const [sidebarOpen,   setSidebarOpen]   = useState(false)
   const [showLogout,    setShowLogout]    = useState(false)
@@ -98,9 +102,11 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   })
   const [solicitudesAprobadas, setSolicitudesAprobadas] = useState([])
 
+  const [loadingSolicitudes, setLoadingSolicitudes] = useState(false);
   useEffect(() => {
     async function load() {
       try {
+        setLoadingSolicitudes(true);
         const [resp, tipos, programas] = await Promise.all([
           apiFetch('/api/solicitudes'),
           apiFetch('/api/catalogos/tipos-participacion'),
@@ -140,13 +146,17 @@ export default function DashboardDocente({ setIsAuthenticated }) {
         }));
       } catch (e) {
         console.error('Error cargando datos iniciales', e);
+        showToast('No se pudieron cargar las solicitudes', { type: 'error' });
+      } finally {
+        setLoadingSolicitudes(false);
       }
     }
     load();
   }, []);
 
   /* CRUD Comisiones */
-  const handleCreateSolicitud = async () => {
+  const handleCreateSolicitud = async (e) => {
+    if (e?.preventDefault) e.preventDefault();
     // Validaciones mínimas en cliente (los inputs "required" no se validan al no usar <form onSubmit>)
     const tipoId = newSolicitud.tipoParticipacionId ?? tiposParticipacion[0]?.id ?? null;
     const progId = newSolicitud.programaEducativoId ?? programasEducativos[0]?.id ?? null;
@@ -203,9 +213,10 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       })
       setShowCreateModal(false)
       setActiveTabComisiones("Pendientes")
+      showToast('Solicitud creada', { type: 'success' });
     } catch (e) {
       console.error('Error creando solicitud', e)
-      alert(e?.message || 'Error creando solicitud')
+      showToast(e?.message || 'Error creando solicitud', { type: 'error' });
     }
   }
 
@@ -239,7 +250,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       setModalEditData(null)
     } catch (e) {
       console.error('Error actualizando solicitud', e)
-      alert(e?.message || 'Error actualizando solicitud')
+      showToast(e?.message || 'Error actualizando solicitud', { type: 'error' });
     }
   }
 
@@ -252,6 +263,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       setSolicitudesPorTab(prev => ({ ...prev, [tab]: lista }))
     } catch (e) {
       console.error('Error cancelando solicitud', e)
+      showToast('Error cancelando solicitud', { type: 'error' });
     }
     setShowDeleteConfirm(false)
     setModalEditData(null)
@@ -311,7 +323,8 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   }, []);
 
   /* CRUD Reportes (docente) */
-  const handleCreateReporte = async () => {
+  const handleCreateReporte = async (e) => {
+    if (e?.preventDefault) e.preventDefault();
     if (!nuevoReporte.solicitudId) {
       alert('Selecciona la solicitud');
       return;
@@ -353,9 +366,10 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       setNuevoReporte(emptyReporte);
       setShowCreateReporteModal(false);
       setActiveTabReportes('Pendientes');
+      showToast('Reporte creado', { type: 'success' });
     } catch (e) {
       console.error('Error creando reporte', e);
-      alert(e?.message || 'Error creando reporte');
+      showToast(e?.message || 'Error creando reporte', { type: 'error' });
     }
   }
 
@@ -391,7 +405,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       setActiveTabReportes('Pendientes');
     } catch (e) {
       console.error('Error actualizando reporte', e);
-      alert(e?.message || 'Error actualizando reporte');
+      showToast(e?.message || 'Error actualizando reporte', { type: 'error' });
     }
   }
 
@@ -421,6 +435,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   /* ──────────────── Render ──────────────── */
   return (
     <div className={`flex h-screen w-full font-sans overflow-hidden ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+      <ErrorBoundary>
       {/* Sidebar */}
       <Sidebar
         activeSection={activeSection}
@@ -456,10 +471,18 @@ export default function DashboardDocente({ setIsAuthenticated }) {
               tabs={tabsComisiones}
               activeTab={activeTabComisiones}
               setActiveTab={setActiveTabComisiones}
+              counts={{
+                Pendientes: solicitudesPorTab.Pendientes.length,
+                Aprobadas: solicitudesPorTab.Aprobadas.length,
+                Rechazadas: solicitudesPorTab.Rechazadas.length,
+                Devueltas: solicitudesPorTab.Devueltas.length,
+              }}
             />
 
             <div className="space-y-4 flex-1 overflow-y-auto">
-              {solicitudesActivas.length > 0 ? (
+              {loadingSolicitudes ? (
+                <SkeletonList rows={4} />
+              ) : solicitudesActivas.length > 0 ? (
                 solicitudesActivas.map((solicitud, i) => (
                   <SolicitudCard
                     key={i}
@@ -472,9 +495,14 @@ export default function DashboardDocente({ setIsAuthenticated }) {
                   />
                 ))
               ) : (
-                <p className="text-center py-10 text-gray-500">
-                  No hay solicitudes {activeTabComisiones.toLowerCase()}
-                </p>
+                <div className="text-center py-10 opacity-80">
+                  <p>No hay solicitudes {activeTabComisiones.toLowerCase()}.</p>
+                  {activeTabComisiones === 'Pendientes' && (
+                    <button onClick={() => setShowCreateModal(true)} className="mt-3 px-4 py-2 bg-green-700 text-white rounded-full">
+                      Crear solicitud
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </>
@@ -487,6 +515,12 @@ export default function DashboardDocente({ setIsAuthenticated }) {
               tabs={tabsReportes}
               activeTab={activeTabReportes}
               setActiveTab={setActiveTabReportes}
+              counts={{
+                Pendientes: reportesPorTab.Pendientes.length,
+                Aprobados: reportesPorTab.Aprobados.length,
+                Rechazados: reportesPorTab.Rechazados.length,
+                Devueltos: reportesPorTab.Devueltos.length,
+              }}
             />
 
             <div className="space-y-4 flex-1 overflow-y-auto">
@@ -503,9 +537,14 @@ export default function DashboardDocente({ setIsAuthenticated }) {
                   />
                 ))
               ) : (
-                <p className="text-center py-10 text-gray-500">
-                  No hay reportes {activeTabReportes.toLowerCase()}
-                </p>
+                <div className="text-center py-10 opacity-80">
+                  <p>No hay reportes {activeTabReportes.toLowerCase()}.</p>
+                  {activeTabReportes === 'Pendientes' && (
+                    <button onClick={() => setShowCreateReporteModal(true)} className="mt-3 px-4 py-2 bg-green-700 text-white rounded-full">
+                      Crear reporte
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </>
@@ -568,6 +607,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
         cancelLogout={cancelLogout}
         handleLogout={handleLogout}
       />
+      </ErrorBoundary>
     </div>
   )
 }

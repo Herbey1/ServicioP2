@@ -44,11 +44,11 @@ export default function CreateReporteModal({
     close()
   }
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" role="dialog" aria-modal="true" aria-labelledby="crear-reporte-title">
       <div className={`${darkMode ? 'bg-gray-800 text-white' : 'bg-white'} w-full max-w-3xl rounded-xl p-8 shadow-lg max-h-[90vh] overflow-y-auto`}>
         {/* Header */}
         <div className={`flex justify-between items-center mb-6 border-b pb-3 ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-          <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Crear reporte</h2>
+          <h2 id="crear-reporte-title" className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Crear reporte</h2>
           <button
             onClick={resetAndClose}
             className={`${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
@@ -59,6 +59,7 @@ export default function CreateReporteModal({
         </div>
 
         {/* Formulario */}
+        <form onSubmit={guardarReporte} noValidate>
         <div className="grid grid-cols-1 gap-6">
           {/* Solicitud relacionada */}
           <div>
@@ -134,21 +135,13 @@ export default function CreateReporteModal({
               className={inputClass}
             />
           </div>
-        </div>        {/* Botones */}
-        <div className="mt-8 flex justify-end gap-4">
-          <button
-            onClick={resetAndClose}
-            className={buttonSecondaryClass + " text-sm"}
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={guardarReporte}
-            className={buttonPrimaryClass + " text-sm"}
-          >
-            Guardar
-          </button>
         </div>
+        {/* Botones */}
+        <div className="mt-8 flex justify-end gap-4">
+          <button type="button" onClick={resetAndClose} className={buttonSecondaryClass + " text-sm"}>Cancelar</button>
+          <button type="submit" className={buttonPrimaryClass + " text-sm"}>Guardar</button>
+        </div>
+        </form>
       </div>
     </div>
   )

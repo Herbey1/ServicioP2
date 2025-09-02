@@ -15,6 +15,9 @@ export default function MainContent({
   /* Datos */
   solicitudesActivas,
   reportesActivos,
+  loadingSolicitudes = false,
+  loadingReportes = false,
+  counts,
   /* Callbacks de revisión */
   handleReviewSolicitud,
   handleReviewReporte
@@ -48,6 +51,8 @@ export default function MainContent({
           setActiveTab={setActiveTab}
           tabs={tabs}
           solicitudesActivas={solicitudesActivas}
+          loading={loadingSolicitudes}
+          counts={counts}
           handleReviewClick={handleReviewSolicitud}
         />
       ) : (
@@ -56,6 +61,8 @@ export default function MainContent({
           setActiveTab={setActiveTab}
           tabs={tabs}
           reportesActivos={reportesActivos}
+          loading={loadingReportes}
+          counts={counts}
           handleReviewClick={handleReviewReporte}
         />
       )}

@@ -6,6 +6,8 @@ import LoginPage from './components/Login/LoginPage';
 import SolicitudesInterface from './components/Docente/dashboard';
 import AdminDashboard from './components/Administrativo/dashboard';
 import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './context/ToastContext';
+import ToastContainer from './components/common/ToastContainer';
 
 function App() {  // Inicializar el estado de autenticación y el rol desde localStorage
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -22,6 +24,7 @@ function App() {  // Inicializar el estado de autenticación y el rol desde loca
 
   return (
     <ThemeProvider>
+      <ToastProvider>
       <Router>
         <Routes>
           <Route path="/login" element={
@@ -50,6 +53,8 @@ function App() {  // Inicializar el estado de autenticación y el rol desde loca
           <Route path="/" element={<Navigate to={isAuthenticated ? (userRole === 'docente' ? "/dashboard" : "/admin") : "/login"} />} />
         </Routes>
       </Router>
+      <ToastContainer />
+      </ToastProvider>
     </ThemeProvider>
   )
 }

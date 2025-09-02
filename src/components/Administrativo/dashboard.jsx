@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useTheme } from "../../context/ThemeContext"
 import { apiFetch } from "../../api/client"
+import { useToast } from "../../context/ToastContext"
+import SkeletonList from "../common/SkeletonList"
 
 /* ── Componentes compartidos ─ */
 import Sidebar            from "../Docente/components/Sidebar"
@@ -18,6 +20,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   /* ------------- UI general ------------- */
   const navigate = useNavigate()
   const { darkMode } = useTheme();
+  const { showToast } = useToast();
   const [activeSection, setActiveSection] = useState("Comisiones")      // "Comisiones" | "Reportes"
   const tabsComisiones = ["Pendientes", "Aprobadas", "Rechazadas", "Devueltas"]
   const tabsReportes   = ["Pendientes", "Aprobados", "Rechazados", "Devueltos"]
@@ -34,9 +37,11 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     Devueltas: []
   })
   const [modalSolicitud, setModalSolicitud] = useState(null) // { tab, index, solicitud }
+  const [loadingSolicitudes, setLoadingSolicitudes] = useState(false)
 
   const loadSolicitudes = async () => {
     try {
+      setLoadingSolicitudes(true)
       const resp = await apiFetch('/api/solicitudes');
       const grouped = { Pendientes: [], Aprobadas: [], Rechazadas: [], Devueltas: [] };
       const estadoMap = {
@@ -62,6 +67,9 @@ export default function AdminDashboard({ setIsAuthenticated }) {
       setSolicitudesPorTab(grouped);
     } catch (e) {
       console.error('Error cargando solicitudes', e);
+      showToast('No se pudieron cargar solicitudes', { type: 'error' })
+    } finally {
+      setLoadingSolicitudes(false)
     }
   }
   useEffect(() => {
@@ -80,6 +88,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
       return true
     } catch (e) {
       console.error('Error cambiando estado', e)
+      showToast('No se pudo cambiar el estado', { type: 'error' })
       return false
     }
   }
@@ -119,11 +128,12 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     Devueltos: []
   })
   const [modalReporte, setModalReporte] = useState(null) // { tab, index, reporte }
+  const [loadingReportes, setLoadingReportes] = useState(false)
 
   useEffect(() => {
     async function loadReportes() {
       try {
-        // Asumiendo que tienes un endpoint /api/reportes
+        setLoadingReportes(true)
         const resp = await apiFetch('/api/reportes'); 
         const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
 
@@ -154,6 +164,9 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         setReportesPorTab(grouped);
       } catch (e) {
         console.error('Error cargando reportes', e);
+        showToast('No se pudieron cargar reportes', { type: 'error' })
+      } finally {
+        setLoadingReportes(false)
       }
     }
     loadReportes();
@@ -338,6 +351,23 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         tabs={activeSection === "Comisiones" ? tabsComisiones : tabsReportes}
         solicitudesActivas={solicitudesActivas}
         reportesActivos={reportesActivos}
+        loadingSolicitudes={loadingSolicitudes}
+        loadingReportes={loadingReportes}
+        counts={
+          activeSection === 'Comisiones'
+            ? {
+                Pendientes: solicitudesPorTab.Pendientes.length,
+                Aprobadas: solicitudesPorTab.Aprobadas.length,
+                Rechazadas: solicitudesPorTab.Rechazadas.length,
+                Devueltas: solicitudesPorTab.Devueltas.length,
+              }
+            : {
+                Pendientes: reportesPorTab.Pendientes.length,
+                Aprobados: reportesPorTab.Aprobados.length,
+                Rechazados: reportesPorTab.Rechazados.length,
+                Devueltos: reportesPorTab.Devueltos.length,
+              }
+        }
         handleReviewSolicitud={handleReviewSolicitud}
         handleReviewReporte={handleReviewReporte}
       />
