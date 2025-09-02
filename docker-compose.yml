@@ -27,6 +27,8 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+      # Persistir archivos subidos por usuarios
+      - ./backend/uploads:/app/uploads
       - /app/node_modules
 
   frontend:

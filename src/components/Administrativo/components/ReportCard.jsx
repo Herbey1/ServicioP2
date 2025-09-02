@@ -38,6 +38,23 @@ export default function ReportCard({ reporte, onReviewClick }) {
           <span className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{reporte.fechaEntrega}</span>
         </div>
 
+        {/* Resumen de historial */}
+        <div className={`mt-2 text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          {(reporte.ultimoCambioFecha || reporte.ultimoCambioActor) && (
+            <div className="mb-1">
+              <span className="font-medium">Último cambio:</span>
+              <span> {reporte.ultimoCambioFecha || '—'}</span>
+              {reporte.ultimoCambioActor && <span> • por {reporte.ultimoCambioActor}</span>}
+            </div>
+          )}
+          {typeof reporte.historialCount === 'number' && (
+            <div>
+              <span className="font-medium">Historial:</span>
+              <span> {reporte.historialCount} evento{reporte.historialCount === 1 ? '' : 's'}</span>
+            </div>
+          )}
+        </div>
+
         {reporte.comentariosAdmin && (
           <div className={`mb-3 p-2 rounded-md text-sm ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
             <p className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>Comentarios:</p>

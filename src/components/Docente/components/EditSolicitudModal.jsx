@@ -24,6 +24,13 @@ export default function EditSolicitudModal({
             </button>
           </div>
 
+          {/* Si fue Devuelta, mostrar motivo del administrador */}
+          {modalEditData?.comentariosAdmin && (
+            <div className="mb-4 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-sm text-yellow-900">
+              <strong>Motivo de devolución:</strong> {modalEditData.comentariosAdmin}
+            </div>
+          )}
+
           {/* Contenido del modal de edición */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             {/* Título de la comisión */}

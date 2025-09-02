@@ -9,7 +9,8 @@ export default function CreateReporteModal({
   close,
   nuevoReporte,
   setNuevoReporte,
-  guardarReporte
+  guardarReporte,
+  solicitudesDisponibles = []
 }) {
   const fileInputRef = useRef(null)
   const { darkMode } = useTheme();
@@ -58,7 +59,26 @@ export default function CreateReporteModal({
         </div>
 
         {/* Formulario */}
-        <div className="grid grid-cols-1 gap-6">          {/* Título */}
+        <div className="grid grid-cols-1 gap-6">
+          {/* Solicitud relacionada */}
+          <div>
+            <label className={labelClass}>
+              Selecciona la solicitud aprobada <span className="text-red-600">*</span>
+            </label>
+            <select
+              className={inputClass}
+              value={nuevoReporte.solicitudId || ''}
+              onChange={(e) => setNuevoReporte({ ...nuevoReporte, solicitudId: e.target.value })}
+              required
+            >
+              <option value="" disabled>Elige una solicitud…</option>
+              {solicitudesDisponibles.map(s => (
+                <option key={s.id} value={s.id}>{s.titulo} ({s.fechaSalida || '-'})</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Título */}
           <div>
             <label className={labelClass}>
               Asunto de la comisión <span className="text-red-600">*</span>

@@ -73,6 +73,7 @@ export default function CreateSolicitudModal({
                 className={inputClass}
                 value={newSolicitud.tipoParticipacionId ?? ""}
                 onChange={(e) => setNewSolicitud({ ...newSolicitud, tipoParticipacionId: parseInt(e.target.value) })}
+                required
               >
                 {tiposParticipacion.map(tipo => (
                   <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>

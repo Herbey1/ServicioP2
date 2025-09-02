@@ -96,6 +96,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
     Rechazadas : [],
     Devueltas  : []
   })
+  const [solicitudesAprobadas, setSolicitudesAprobadas] = useState([])
 
   useEffect(() => {
     async function load() {
@@ -114,17 +115,22 @@ export default function DashboardDocente({ setIsAuthenticated }) {
           RECHAZADA: { tab: 'Rechazadas', status: 'Rechazada' },
           DEVUELTA: { tab: 'Devueltas', status: 'Devuelta' }
         };
+        const aprobadas = [];
         (resp.items || []).forEach(item => {
           const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
-          grouped[map.tab].push({
+          const sItem = {
             id: item.id,
             titulo: item.asunto,
             solicitante: item.usuarios?.nombre || userName,
             fechaSalida: item.fecha_salida?.slice(0,10),
-            status: map.status
-          });
+            status: map.status,
+            comentariosAdmin: item.motivo_estado || undefined
+          };
+          grouped[map.tab].push(sItem);
+          if (item.estado === 'APROBADA') aprobadas.push(sItem);
         });
         setSolicitudesPorTab(grouped);
+        setSolicitudesAprobadas(aprobadas);
         setTiposParticipacion(tipos);
         setProgramasEducativos(programas);
         setNewSolicitud(prev => ({
@@ -141,12 +147,32 @@ export default function DashboardDocente({ setIsAuthenticated }) {
 
   /* CRUD Comisiones */
   const handleCreateSolicitud = async () => {
-    if (!newSolicitud.titulo) return alert("Completa el título.")
+    // Validaciones mínimas en cliente (los inputs "required" no se validan al no usar <form onSubmit>)
+    const tipoId = newSolicitud.tipoParticipacionId ?? tiposParticipacion[0]?.id ?? null;
+    const progId = newSolicitud.programaEducativoId ?? programasEducativos[0]?.id ?? null;
+    const reqs = [
+      ['Asunto', newSolicitud.titulo],
+      ['Tipo de participación', tipoId],
+      ['Ciudad', newSolicitud.ciudad],
+      ['País', newSolicitud.pais],
+      ['Lugar', newSolicitud.lugar],
+      ['Fecha de salida', newSolicitud.fechaSalida],
+      ['Hora de salida', newSolicitud.horaSalida],
+      ['Fecha de regreso', newSolicitud.fechaRegreso],
+      ['Hora de regreso', newSolicitud.horaRegreso],
+      ['Número de personas', newSolicitud.numeroPersonas],
+      ['Programa educativo', progId]
+    ];
+    const missing = reqs.find(([_, v]) => v === undefined || v === null || v === '');
+    if (missing) {
+      alert(`Completa el campo: ${missing[0]}`);
+      return;
+    }
 
     try {
       const body = {
         asunto: newSolicitud.titulo,
-        tipo_participacion_id: newSolicitud.tipoParticipacionId,
+        tipo_participacion_id: tipoId,
         ciudad: newSolicitud.ciudad,
         pais: newSolicitud.pais,
         lugar: newSolicitud.lugar,
@@ -154,13 +180,13 @@ export default function DashboardDocente({ setIsAuthenticated }) {
         hora_salida: newSolicitud.horaSalida,
         fecha_regreso: newSolicitud.fechaRegreso,
         hora_regreso: newSolicitud.horaRegreso,
-        num_personas: newSolicitud.numeroPersonas,
-        usa_unidad_transporte: newSolicitud.necesitaTransporte,
-        cantidad_combustible: newSolicitud.cantidadCombustible,
-        programa_educativo_id: newSolicitud.programaEducativoId,
+        num_personas: Number(newSolicitud.numeroPersonas) || 1,
+        usa_unidad_transporte: !!newSolicitud.necesitaTransporte,
+        cantidad_combustible: newSolicitud.cantidadCombustible ?? null,
+        programa_educativo_id: progId,
         alumnos_beneficiados: 0,
-        proyecto_investigacion: newSolicitud.proyectoInvestigacion,
-        obtendra_constancia: newSolicitud.obtendraConstancia,
+        proyecto_investigacion: !!newSolicitud.proyectoInvestigacion,
+        obtendra_constancia: !!newSolicitud.obtendraConstancia,
         comentarios: newSolicitud.comentarios
       }
       const resp = await apiFetch('/api/solicitudes', { method: 'POST', body })
@@ -179,7 +205,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       setActiveTabComisiones("Pendientes")
     } catch (e) {
       console.error('Error creando solicitud', e)
-      alert('Error creando solicitud')
+      alert(e?.message || 'Error creando solicitud')
     }
   }
 
@@ -190,7 +216,21 @@ export default function DashboardDocente({ setIsAuthenticated }) {
         method: 'PATCH',
         body: {
           asunto: s.titulo,
-          comentarios: s.comentarios
+          tipo_participacion_id: s.tipoParticipacionId,
+          ciudad: s.ciudad,
+          pais: s.pais,
+          lugar: s.lugar,
+          fecha_salida: s.fechaSalida,
+          fecha_regreso: s.fechaRegreso,
+          hora_salida: s.horaSalida,
+          hora_regreso: s.horaRegreso,
+          num_personas: s.numeroPersonas,
+          usa_unidad_transporte: s.necesitaTransporte,
+          cantidad_combustible: s.cantidadCombustible,
+          programa_educativo_id: s.programaEducativoId,
+          proyecto_investigacion: s.proyectoInvestigacion,
+          obtendra_constancia: s.obtendraConstancia,
+          comentarios: s.comentarios,
         }
       })
       const lista = [...solicitudesPorTab[tab]]
@@ -199,6 +239,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       setModalEditData(null)
     } catch (e) {
       console.error('Error actualizando solicitud', e)
+      alert(e?.message || 'Error actualizando solicitud')
     }
   }
 
@@ -237,42 +278,130 @@ export default function DashboardDocente({ setIsAuthenticated }) {
     Devueltos  : []
   })
 
-  /* CRUD Reportes */
-  const handleCreateReporte = () => {
-    if (!nuevoReporte.titulo || !nuevoReporte.descripcion || !nuevoReporte.fechaEntrega)
-      return alert("Completa los campos obligatorios.")
+  // Cargar reportes del docente
+  useEffect(() => {
+    async function loadMyReportes() {
+      try {
+        const resp = await apiFetch('/api/reportes');
+        const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
+        const estadoMap = {
+          EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+          APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
+          RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
+          DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
+        };
+        (resp.items || []).forEach(item => {
+          const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
+          grouped[map.tab].push({
+            id: item.id,
+            titulo: item.asunto || 'Reporte de Comisión',
+            solicitante: item.usuarios?.nombre || '',
+            fechaEntrega: item.fecha_entrega?.slice(0,10) || '',
+            status: map.status,
+            descripcion: item.descripcion || '',
+            comentariosAdmin: item.motivo_estado || undefined
+          });
+        });
+        setReportesPorTab(grouped);
+      } catch (e) {
+        console.error('Error cargando mis reportes', e);
+      }
+    }
+    loadMyReportes();
+  }, []);
 
-    // Generar ID único para el reporte
-    const year = new Date().getFullYear()
-    const count = reportesPorTab.Pendientes.length +
-                  reportesPorTab.Aprobados.length +
-                  reportesPorTab.Rechazados.length +
-                  reportesPorTab.Devueltos.length + 1
-    const id = `REP-${year}-${count.toString().padStart(3, '0')}`
-
-    setReportesPorTab(prev => ({
-      ...prev,
-      Pendientes: [...prev.Pendientes, {...nuevoReporte, id}]
-    }))
-    setNuevoReporte(emptyReporte)
-    setShowCreateReporteModal(false)
-    setActiveTabReportes("Pendientes")
+  /* CRUD Reportes (docente) */
+  const handleCreateReporte = async () => {
+    if (!nuevoReporte.solicitudId) {
+      alert('Selecciona la solicitud');
+      return;
+    }
+    if (!nuevoReporte.descripcion || !nuevoReporte.fechaEntrega) {
+      alert('Completa descripción y fecha de entrega');
+      return;
+    }
+    try {
+      await apiFetch('/api/reportes', {
+        method: 'POST',
+        body: {
+          solicitud_id: nuevoReporte.solicitudId,
+          descripcion: nuevoReporte.descripcion,
+        }
+      });
+      // Recargar la lista desde API
+      const resp = await apiFetch('/api/reportes');
+      const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
+      const estadoMap = {
+        EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+        APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
+        RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
+        DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
+      };
+      (resp.items || []).forEach(item => {
+        const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
+        grouped[map.tab].push({
+          id: item.id,
+          titulo: item.asunto || 'Reporte de Comisión',
+          solicitante: item.usuarios?.nombre || '',
+          fechaEntrega: item.fecha_entrega?.slice(0,10) || '',
+          status: map.status,
+          descripcion: item.descripcion || '',
+          comentariosAdmin: item.motivo_estado || undefined
+        });
+      });
+      setReportesPorTab(grouped);
+      setNuevoReporte(emptyReporte);
+      setShowCreateReporteModal(false);
+      setActiveTabReportes('Pendientes');
+    } catch (e) {
+      console.error('Error creando reporte', e);
+      alert(e?.message || 'Error creando reporte');
+    }
   }
 
-  const handleSaveEditReporte = () => {
-    const { tab, index, ...r } = modalEditReporte
-    const lista = [...reportesPorTab[tab]]
-    lista[index] = r
-    setReportesPorTab(prev => ({ ...prev, [tab]: lista }))
-    setModalEditReporte(null)
+  const handleSaveEditReporte = async (updated) => {
+    const src = updated || modalEditReporte;
+    const { tab, index, id, ...r } = src;
+    try {
+      // Solo mandamos descripcion al backend; título lo provee la solicitud vinculada
+      await apiFetch(`/api/reportes/${id}`, { method: 'PATCH', body: { descripcion: r.descripcion } });
+      // Tras editar, recarga la lista real desde API
+      const resp = await apiFetch('/api/reportes');
+      const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
+      const estadoMap = {
+        EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+        APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
+        RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
+        DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
+      };
+      (resp.items || []).forEach(item => {
+        const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
+        grouped[map.tab].push({
+          id: item.id,
+          titulo: item.asunto || 'Reporte de Comisión',
+          solicitante: item.usuarios?.nombre || '',
+          fechaEntrega: item.fecha_entrega?.slice(0,10) || '',
+          status: map.status,
+          descripcion: item.descripcion || '',
+          comentariosAdmin: item.motivo_estado || undefined
+        });
+      });
+      setReportesPorTab(grouped);
+      setModalEditReporte(null);
+      setActiveTabReportes('Pendientes');
+    } catch (e) {
+      console.error('Error actualizando reporte', e);
+      alert(e?.message || 'Error actualizando reporte');
+    }
   }
 
   const handleDeleteReporte = () => {
-    const { tab, index } = modalEditReporte
-    const lista = [...reportesPorTab[tab]]
-    lista.splice(index, 1)
-    setReportesPorTab(prev => ({ ...prev, [tab]: lista }))
-    setModalEditReporte(null)
+    // Aún sin endpoint: solo afecta a locales temporales
+    const { tab, index } = modalEditReporte;
+    const lista = [...reportesPorTab[tab]];
+    lista.splice(index, 1);
+    setReportesPorTab(prev => ({ ...prev, [tab]: lista }));
+    setModalEditReporte(null);
   }
 
   /* ──────────────── UI helpers ──────────────── */
@@ -421,6 +550,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
         nuevoReporte={nuevoReporte}
         setNuevoReporte={setNuevoReporte}
         guardarReporte={handleCreateReporte}
+        solicitudesDisponibles={solicitudesAprobadas}
       />
 
       {modalEditReporte && (

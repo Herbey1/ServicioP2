@@ -69,6 +69,23 @@ export default function SolicitudCard({ solicitud, onReviewClick, isAdmin = true
           </div>
         </div>
 
+        {/* Resumen de historial */}
+        <div className={`mt-2 text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          {(solicitud.ultimoCambioFecha || solicitud.ultimoCambioActor) && (
+            <div className="mb-1">
+              <span className="font-medium">Último cambio:</span>
+              <span> {solicitud.ultimoCambioFecha || '—'}</span>
+              {solicitud.ultimoCambioActor && <span> • por {solicitud.ultimoCambioActor}</span>}
+            </div>
+          )}
+          {typeof solicitud.historialCount === 'number' && (
+            <div>
+              <span className="font-medium">Historial:</span>
+              <span> {solicitud.historialCount} evento{solicitud.historialCount === 1 ? '' : 's'}</span>
+            </div>
+          )}
+        </div>
+
         {/* Si hay comentarios del administrador, mostrarlos */}
         {solicitud.comentariosAdmin && (
           <div className="mb-3 p-2 bg-gray-50 rounded-md text-sm">

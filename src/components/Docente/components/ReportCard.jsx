@@ -20,7 +20,7 @@ export default function ReportCard({ reporte, index, statusColors, handleEdit })
       darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'
     }`}>
       {/* Información principal */}
-      <div className="mr-4">
+      <div className="mr-4 flex-1">
         <div className="flex items-center gap-2 mb-1">
           <h3 className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>{reporte.titulo}</h3>
           {reporte.id && (
@@ -34,6 +34,11 @@ export default function ReportCard({ reporte, index, statusColors, handleEdit })
         <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
           Entregado por: <span className="font-medium">{reporte.solicitante}</span>
         </p>
+        {(reporte.status === 'Devuelto' || reporte.status === 'Rechazado') && reporte.comentariosAdmin && (
+          <p className={`mt-2 text-xs ${darkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>
+            Motivo: {reporte.comentariosAdmin}
+          </p>
+        )}
       </div>      {/* Detalles y acciones */}
       <div className="flex items-center gap-6">
         <div className="text-right">

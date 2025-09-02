@@ -52,7 +52,11 @@ export default function AdminDashboard({ setIsAuthenticated }) {
           titulo: item.asunto,
           solicitante: item.usuarios?.nombre || item.docente_id,
           fechaSalida: item.fecha_salida?.slice(0,10),
-          status: map.status
+          status: map.status,
+          // Resumen de historial
+          ultimoCambioFecha: item.last_change_at ? new Date(item.last_change_at).toLocaleString() : undefined,
+          ultimoCambioActor: item.last_change_by || undefined,
+          historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined
         });
       });
       setSolicitudesPorTab(grouped);
@@ -140,7 +144,11 @@ export default function AdminDashboard({ setIsAuthenticated }) {
             solicitante: item.usuarios?.nombre || item.docente_id,
             fechaEntrega: item.fecha_entrega?.slice(0,10) || "N/A",
             status: map.status,
-            descripcion: item.descripcion || ""
+            descripcion: item.descripcion || "",
+            // resumen historial
+            ultimoCambioFecha: item.last_change_at ? new Date(item.last_change_at).toLocaleString() : undefined,
+            ultimoCambioActor: item.last_change_by || undefined,
+            historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined
           });
         });
         setReportesPorTab(grouped);
@@ -174,28 +182,116 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     })
   }
 
-  const approveReporte = (tab, index, comments) => {
-    moveReporte(tab, "Aprobados", index, {
-      status: "Aprobado",
-      ...(comments ? { comentariosAdmin: comments } : {})
-    })
-    setActiveTabReportes("Aprobados")
+  const approveReporte = async (tab, index, comments) => {
+    try {
+      const r = reportesPorTab[tab][index]
+      await apiFetch(`/api/reportes/${r.id}/estado`, {
+        method: 'PATCH',
+        body: { estado: 'APROBADO', motivo: comments }
+      })
+      // Recargar desde API para reflejar cambios y mantener consistencia
+      await (async function reload() {
+        try {
+          const resp = await apiFetch('/api/reportes')
+          const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] }
+          const estadoMap = {
+            EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+            APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
+            RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
+            DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
+          }
+          ;(resp.items || []).forEach(item => {
+            const map = estadoMap[item.estado] || estadoMap.EN_REVISION
+            grouped[map.tab].push({
+              id: item.id,
+              titulo: item.asunto || 'Reporte de Comisión',
+              solicitante: item.usuarios?.nombre || item.docente_id,
+              fechaEntrega: item.fecha_entrega?.slice(0,10) || 'N/A',
+              status: map.status,
+              descripcion: item.descripcion || ''
+            })
+          })
+          setReportesPorTab(grouped)
+        } catch (e) { console.error('Error recargando reportes', e) }
+      })()
+      setActiveTabReportes('Aprobados')
+    } catch (e) {
+      console.error('Error aprobando reporte', e)
+    }
   }
 
-  const rejectReporte = (tab, index, comments) => {
-    moveReporte(tab, "Rechazados", index, {
-      status: "Rechazado",
-      comentariosAdmin: comments
-    })
-    setActiveTabReportes("Rechazados")
+  const rejectReporte = async (tab, index, comments) => {
+    try {
+      const r = reportesPorTab[tab][index]
+      await apiFetch(`/api/reportes/${r.id}/estado`, {
+        method: 'PATCH',
+        body: { estado: 'RECHAZADO', motivo: comments }
+      })
+      await (async function reload() {
+        try {
+          const resp = await apiFetch('/api/reportes')
+          const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] }
+          const estadoMap = {
+            EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+            APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
+            RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
+            DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
+          }
+          ;(resp.items || []).forEach(item => {
+            const map = estadoMap[item.estado] || estadoMap.EN_REVISION
+            grouped[map.tab].push({
+              id: item.id,
+              titulo: item.asunto || 'Reporte de Comisión',
+              solicitante: item.usuarios?.nombre || item.docente_id,
+              fechaEntrega: item.fecha_entrega?.slice(0,10) || 'N/A',
+              status: map.status,
+              descripcion: item.descripcion || ''
+            })
+          })
+          setReportesPorTab(grouped)
+        } catch (e) { console.error('Error recargando reportes', e) }
+      })()
+      setActiveTabReportes('Rechazados')
+    } catch (e) {
+      console.error('Error rechazando reporte', e)
+    }
   }
 
-  const returnReporte = (tab, index, comments) => {
-    moveReporte(tab, "Devueltos", index, {
-      status: "Devuelto",
-      comentariosAdmin: comments
-    })
-    setActiveTabReportes("Devueltos")
+  const returnReporte = async (tab, index, comments) => {
+    try {
+      const r = reportesPorTab[tab][index]
+      await apiFetch(`/api/reportes/${r.id}/estado`, {
+        method: 'PATCH',
+        body: { estado: 'DEVUELTO', motivo: comments }
+      })
+      await (async function reload() {
+        try {
+          const resp = await apiFetch('/api/reportes')
+          const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] }
+          const estadoMap = {
+            EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+            APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
+            RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
+            DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
+          }
+          ;(resp.items || []).forEach(item => {
+            const map = estadoMap[item.estado] || estadoMap.EN_REVISION
+            grouped[map.tab].push({
+              id: item.id,
+              titulo: item.asunto || 'Reporte de Comisión',
+              solicitante: item.usuarios?.nombre || item.docente_id,
+              fechaEntrega: item.fecha_entrega?.slice(0,10) || 'N/A',
+              status: map.status,
+              descripcion: item.descripcion || ''
+            })
+          })
+          setReportesPorTab(grouped)
+        } catch (e) { console.error('Error recargando reportes', e) }
+      })()
+      setActiveTabReportes('Devueltos')
+    } catch (e) {
+      console.error('Error devolviendo reporte', e)
+    }
   }
   /* ------------- Auxiliares UI ------------- */  const toggleSidebar   = () => setSidebarOpen(!sidebarOpen)
   const showLogoutModal = () => setShowLogout(true)

@@ -14,7 +14,14 @@ DO $$ BEGIN
         CREATE TYPE solicitud_estado AS ENUM ('EN_REVISION','APROBADA','RECHAZADA','DEVUELTA','CANCELADA');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'reporte_estado') THEN
-        CREATE TYPE reporte_estado AS ENUM ('PENDIENTE','EN_REVISION','APROBADO','DEVUELTO');
+        CREATE TYPE reporte_estado AS ENUM ('PENDIENTE','EN_REVISION','APROBADO','RECHAZADO','DEVUELTO');
+    ELSE
+        BEGIN
+            ALTER TYPE reporte_estado ADD VALUE IF NOT EXISTS 'RECHAZADO';
+        EXCEPTION WHEN duplicate_object THEN
+            -- valor ya existe o fue añadido en otra ejecución
+            NULL;
+        END;
     END IF;
 END $$;
 

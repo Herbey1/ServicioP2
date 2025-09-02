@@ -30,6 +30,7 @@ enum reporte_estado {
   PENDIENTE
   EN_REVISION
   APROBADO
+  RECHAZADO
   DEVUELTO
 
   @@map("reporte_estado")

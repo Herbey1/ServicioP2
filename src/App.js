@@ -27,13 +27,25 @@ function App() {  // Inicializar el estado de autenticación y el rol desde loca
           <Route path="/login" element={
             isAuthenticated ? <Navigate to={userRole === 'docente' ? "/dashboard" : "/admin"} /> : <LoginPage setIsAuthenticated={setIsAuthenticated} setUserRole={setUserRole} />
           } />
-          <Route 
-            path="/dashboard" 
-            element={isAuthenticated ? <SolicitudesInterface setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />} 
+          <Route
+            path="/dashboard"
+            element={
+              isAuthenticated && userRole === 'docente'
+                ? <SolicitudesInterface setIsAuthenticated={setIsAuthenticated} />
+                : isAuthenticated && userRole === 'admin'
+                  ? <Navigate to="/admin" />
+                  : <Navigate to="/login" />
+            }
           />
-          <Route 
-            path="/admin" 
-            element={isAuthenticated ? <AdminDashboard setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />} 
+          <Route
+            path="/admin"
+            element={
+              isAuthenticated && userRole === 'admin'
+                ? <AdminDashboard setIsAuthenticated={setIsAuthenticated} />
+                : isAuthenticated && userRole === 'docente'
+                  ? <Navigate to="/dashboard" />
+                  : <Navigate to="/login" />
+            }
           />
           <Route path="/" element={<Navigate to={isAuthenticated ? (userRole === 'docente' ? "/dashboard" : "/admin") : "/login"} />} />
         </Routes>
