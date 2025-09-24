@@ -39,7 +39,7 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      REACT_APP_API_URL: http://localhost:4000
+      REACT_APP_API_URL: ${REACT_APP_API_URL}
     ports:
       - "3000:3000"
     depends_on:
