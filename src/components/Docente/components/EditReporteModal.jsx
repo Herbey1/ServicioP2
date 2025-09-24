@@ -17,7 +17,7 @@ export default function EditReporteModal({
     if (modalData) setFormData({ ...modalData })
   }, [modalData])
 
-  if (!modalData) return null
+  if (!modalData || !formData) return null
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -45,12 +45,17 @@ export default function EditReporteModal({
           </button>
         </div>
 
-        {/* Nota si viene de Devueltos */}
+        {/* Nota si viene de Devueltos + motivo */}
         {modalData.tab === "Devueltos" && (
-          <p className="mb-4 text-sm text-orange-700 bg-orange-100 p-3 rounded-lg">
-            Este reporte fue devuelto para correcciones. Al guardar los cambios
-            volverá a quedar <strong>En revisión</strong>.
-          </p>
+          <div className="mb-4 p-3 rounded-lg bg-orange-50 border border-orange-200 text-sm text-orange-900">
+            <p>
+              Este reporte fue devuelto para correcciones. Al guardar los cambios
+              volverá a quedar <strong>En revisión</strong>.
+            </p>
+            {modalData.comentariosAdmin && (
+              <p className="mt-2"><strong>Motivo de devolución:</strong> {modalData.comentariosAdmin}</p>
+            )}
+          </div>
         )}
 
         {/* Formulario */}
@@ -134,8 +139,7 @@ export default function EditReporteModal({
             </button>
             <button
               onClick={() => {
-                setModalData(formData)
-                guardarCambios()
+                guardarCambios(formData)
               }}
               className="px-5 py-2 rounded-full bg-green-700 hover:bg-green-800 text-white text-sm font-medium"
             >

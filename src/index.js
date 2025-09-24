@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import TailwindLoader from './components/TailwindLoader';
+import './assets/css/globals.css';
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
