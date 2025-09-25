@@ -1,8 +1,6 @@
 import React from "react";
 
 export default function LoginForm({ 
-  mode, 
-  setMode, 
   email, 
   setEmail, 
   password, 
@@ -36,41 +34,13 @@ export default function LoginForm({
           className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-500"
           placeholder="Ingresa tu contraseña"
         />
-        {mode === "login" && (
-          <div className="text-right mt-1">
-            <a href="#" className="text-gray-500 text-sm">¿Olvidaste tu contraseña?</a>
-          </div>
-        )}
-      </div>
-
-      <div className="text-center text-gray-600 text-sm">
-        {mode === "login" ? (
-          <>
-            ¿No tienes cuenta?{" "}
-            <button
-              type="button"
-              className="text-green-700 font-medium"
-              onClick={() => setMode("register")}
-            >
-              Regístrate
-            </button>
-          </>
-        ) : (
-          <>
-            ¿Ya tienes cuenta?{" "}
-            <button
-              type="button"
-              className="text-green-700 font-medium"
-              onClick={() => setMode("login")}
-            >
-              Inicia sesión
-            </button>
-          </>
-        )}
+        <div className="text-right mt-1">
+          <a href="#" className="text-gray-500 text-sm">¿Olvidaste tu contraseña?</a>
+        </div>
       </div>
 
       <button type="submit" className="w-full bg-green-700 text-white py-3 rounded-md font-medium mt-4">
-        {mode === "login" ? "Iniciar sesión" : "Registrarse"}
+        Iniciar sesión
       </button>
     </form>
   );

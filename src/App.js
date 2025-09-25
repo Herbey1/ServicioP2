@@ -5,40 +5,57 @@ import { useState, useEffect } from "react"
 import LoginPage from './components/Login/LoginPage';
 import SolicitudesInterface from './components/Docente/dashboard';
 import AdminDashboard from './components/Administrativo/dashboard';
+import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './context/ToastContext';
+import ToastContainer from './components/common/ToastContainer';
 
 function App() {  // Inicializar el estado de autenticación y el rol desde localStorage
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('isAuthenticated') === 'true'
-  });
-  
-  const [userRole, setUserRole] = useState(() => {
-    return localStorage.getItem('userRole') || 'docente'
+    return !!localStorage.getItem('token');
   });
 
-  // Guardar el estado de autenticación y rol en localStorage cuando cambien
-  useEffect(() => {
-    localStorage.setItem('isAuthenticated', isAuthenticated)
-  }, [isAuthenticated]);
+  const [userRole, setUserRole] = useState(() => {
+    return localStorage.getItem('userRole') || 'docente';
+  });
   
   useEffect(() => {
-    localStorage.setItem('userRole', userRole)
+    localStorage.setItem('userRole', userRole);
   }, [userRole]);
 
   return (
-    <Router>      <Routes>        <Route path="/login" element={
-          isAuthenticated ? <Navigate to={userRole === 'docente' ? "/dashboard" : "/admin"} /> : <LoginPage setIsAuthenticated={setIsAuthenticated} setUserRole={setUserRole} />
-        } />
-        <Route 
-          path="/dashboard" 
-          element={isAuthenticated ? <SolicitudesInterface setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />} 
-        />
-        <Route 
-          path="/admin" 
-          element={isAuthenticated ? <AdminDashboard setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />} 
-        />
-        <Route path="/" element={<Navigate to={isAuthenticated ? (userRole === 'docente' ? "/dashboard" : "/admin") : "/login"} />} />
-      </Routes>
-    </Router>
+    <ThemeProvider>
+      <ToastProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={
+            isAuthenticated ? <Navigate to={userRole === 'docente' ? "/dashboard" : "/admin"} /> : <LoginPage setIsAuthenticated={setIsAuthenticated} setUserRole={setUserRole} />
+          } />
+          <Route
+            path="/dashboard"
+            element={
+              isAuthenticated && userRole === 'docente'
+                ? <SolicitudesInterface setIsAuthenticated={setIsAuthenticated} />
+                : isAuthenticated && userRole === 'admin'
+                  ? <Navigate to="/admin" />
+                  : <Navigate to="/login" />
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              isAuthenticated && userRole === 'admin'
+                ? <AdminDashboard setIsAuthenticated={setIsAuthenticated} />
+                : isAuthenticated && userRole === 'docente'
+                  ? <Navigate to="/dashboard" />
+                  : <Navigate to="/login" />
+            }
+          />
+          <Route path="/" element={<Navigate to={isAuthenticated ? (userRole === 'docente' ? "/dashboard" : "/admin") : "/login"} />} />
+        </Routes>
+      </Router>
+      <ToastContainer />
+      </ToastProvider>
+    </ThemeProvider>
   )
 }
 

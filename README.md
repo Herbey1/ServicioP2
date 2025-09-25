@@ -1,97 +1,101 @@
-# Sistema de Gestión de Comisiones Académicas
+# Guía de despliegue del sistema
 
-Sistema para la gestión y seguimiento de solicitudes de comisiones académicas de la Facultad de Ciencias Químicas e Ingeniería (FCQI) de la UABC.
+Este proyecto permite levantar un entorno completo con base de datos, backend y frontend para el Sistema de Gestión de Comisiones Académicas (SGCA).
 
-## Estructura del Proyecto
+## Requisitos previos
 
-El proyecto está organizado de la siguiente manera:
+- **Docker** y **Docker Compose** instalados.
+- Puertos libres: `3000` (frontend), `4000` (backend) y `5432` (PostgreSQL, configurable).
+- Opcional: un cliente PostgreSQL para inspeccionar la base de datos.
 
-```
-src/
-├── assets/
-│   └── images/
-│       ├── Logo brochazos.png
-│       └── logo uabc.jpg
-├── components/
-│   ├── login.jsx         # Componente de inicio de sesión
-│   ├── TailwindLoader.js
-│   ├── Administrativo/   # Componentes para el usuario administrativo
-│   │   ├── dashboard.jsx
-│   │   └── components/
-│   │       ├── ReviewSolicitudModal.jsx
-│   │       └── SolicitudCard.jsx
-│   └── Docente/         # Componentes para el usuario docente
-│       ├── dashboard.jsx
-│       └── components/
-│           ├── CreateSolicitudModal.jsx
-│           ├── DeleteConfirmModal.jsx
-│           ├── EditSolicitudModal.jsx
-│           ├── Header.jsx
-│           ├── LogoutConfirmModal.jsx
-│           ├── Sidebar.jsx
-│           ├── SolicitudCard.jsx
-│           └── TabSelector.jsx
-├── App.js               # Componente principal con enrutamiento
-└── index.js             # Punto de entrada de la aplicación
+---
+
+## 1. Clonar el repositorio
+
+```bash
+git clone <URL-del-repositorio>
+cd ServicioP2
 ```
 
-## Flujo de Autenticación
+---
 
-El sistema cuenta con dos tipos de usuario:
+## 2. Configurar variables de entorno
 
-1. **Docente**: Puede crear, editar y eliminar solicitudes de comisiones académicas.
-2. **Administrativo**: Puede revisar, aprobar, rechazar o devolver solicitudes.
+1. Copia el archivo de ejemplo:
+   ```bash
+   cp .env.example .env
+   ```
+2. Si lo deseas, edita `.env` para ajustar:
+   - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `PGPORT`
+   - `JWT_SECRET`
+   - `REACT_APP_API_URL` (por defecto apunta al backend en Docker)
 
-Al iniciar sesión, dependiendo del tipo de usuario seleccionado, el sistema redirige a:
+---
 
-- `/dashboard` para usuarios docentes.
-- `/admin` para usuarios administrativos.
+## 3. Levantar los servicios
 
-## Componentes Principales
+```bash
+docker compose up -d
+```
 
-### Login
+Esto construirá y arrancará tres contenedores:
 
-- Permite autenticación para diferentes tipos de usuarios.
-- Maneja la redirección según el rol del usuario.
+| Servicio  | Puerto local | Descripción                                 |
+|-----------|--------------|---------------------------------------------|
+| db        | `PGPORT`     | PostgreSQL con datos iniciales (`initdb`)   |
+| backend   | `4000`       | API Express + Prisma                        |
+| frontend  | `3000`       | Aplicación React                            |
 
-### Dashboard Docente
+> El contenedor `backend` espera a que la base de datos esté **healthy** antes de iniciar.
 
-- Visualización de solicitudes en diferentes estados (Pendientes, Aprobadas, Rechazadas, Devueltas).
-- Creación, edición y eliminación de solicitudes.
+---
 
-### Dashboard Administrativo
+## 4. Verificar el estado
 
-- Visualización de solicitudes enviadas por los docentes.
-- Funcionalidad para aprobar, rechazar o devolver solicitudes para corrección.
-- Capacidad para añadir comentarios en las solicitudes.
+- Logs en tiempo real:
+  ```bash
+  docker compose logs -f
+  ```
+- Listar contenedores activos:
+  ```bash
+  docker ps
+  ```
 
-## Implementación
+---
 
-El proyecto está desarrollado con React, utilizando:
+## 5. Acceder a la aplicación
 
-- **React Router** para la navegación.
-- **TailwindCSS** para el diseño de la interfaz.
-- **LocalStorage** para la persistencia básica de datos de sesión.
+- **Frontend:** <http://localhost:3000>
+- **Backend (API):** <http://localhost:4000>
+- **Base de datos:** `postgresql://sgca_user:sgca_password_123@localhost:PGPORT/sgca`
+- **Credenciales de ejemplo** (solo para desarrollo):
+  - Usuario: `admin@uabc.edu.mx`
+  - Password: `WkdbdY45LFtvoBdhfcGkGQ`
 
-## Desarrollo Futuro
+---
 
-- Integración con backend para persistencia de datos.
-- Implementación de sistema de notificaciones.
-- Generación de reportes y estadísticas.
+## 6. Apagar los servicios
 
-## Roadmap
-- CRUD Solicitudes (Docente)
-- Flujo de Revisión Solicitudes (Admin)
-- CRUD Reportes (Docente)
-- Flujo de Revisión Reportes (Admin)
-- Sección Perfil (LISTO)
-- Dashboard estadístico con gráficas
-- Subida real de archivos a S3/Cloudinary
-- Single Sign-On (UABC)
-- Notificaciones por correo
-- Modo oscuro completo 
+```bash
+docker compose down
+```
 
-## Créditos
-### Gámez Gastelum Alberto
-### García Mónica
-### Gamez Gaxiola Carlos Herbey
+> Añade `-v` para borrar el volumen de datos:
+> ```bash
+> docker compose down -v
+> ```
+
+---
+
+## 7. (Opcional) Ejecutar solo la base de datos
+
+Dentro de `SGCA_DB/` hay un stack mínimo:
+
+```bash
+cd SGCA_DB
+docker compose -f docker-compose.sgca.yml --env-file .env.sgca up -d
+```
+
+Esto levanta únicamente PostgreSQL con los mismos datos iniciales.
+
+---

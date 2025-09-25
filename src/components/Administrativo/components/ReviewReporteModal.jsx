@@ -1,7 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import PropTypes from "prop-types"
+import { useTheme } from "../../../context/ThemeContext"
+import { apiFetch } from "../../../api/client"
 
 export default function ReviewReporteModal({
   isOpen,
@@ -13,8 +15,9 @@ export default function ReviewReporteModal({
 }) {
   const [comments, setComments] = useState("")
   const [processing, setProcessing] = useState(false) // evita duplicados
-
-  if (!isOpen) return null
+  const { darkMode } = useTheme();
+  const [historial, setHistorial] = useState([])
+  const [loadingHist, setLoadingHist] = useState(false)
 
   const handleAction = (action) => {
     if (processing) return
@@ -22,40 +25,77 @@ export default function ReviewReporteModal({
     action(comments)   // pasa comentarios si aplica
     onClose()          // cierra de inmediato
   }
+  
+  useEffect(() => {
+    async function load() {
+      try {
+        setLoadingHist(true)
+        const detail = await apiFetch(`/api/reportes/${reporte.id}`)
+        setHistorial(detail.estados_hist || [])
+      } catch (e) {
+        console.error('Error cargando historial de reporte', e)
+      } finally {
+        setLoadingHist(false)
+      }
+    }
+    if (isOpen && reporte?.id) load()
+  }, [isOpen, reporte?.id])
 
+  if (!isOpen) return null
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div className={`${darkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto`}>
         <div className="p-6">
-          <h2 className="text-2xl font-bold mb-6">{reporte.titulo}</h2>
-
-          {/* Datos principales */}
+          <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{reporte.titulo}</h2>          {/* Datos principales */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <h3 className="font-semibold mb-2">Datos del solicitante</h3>
+            <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-4 rounded-lg`}>
+              <h3 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Datos del solicitante</h3>
               <p><span className="font-medium">Solicitante:</span> {reporte.solicitante}</p>
               <p><span className="font-medium">Fecha de entrega:</span> {reporte.fechaEntrega}</p>
             </div>
-            <div>
-              <h3 className="font-semibold mb-2">Estado del reporte</h3>
+            <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-4 rounded-lg`}>
+              <h3 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Estado del reporte</h3>
               <p><span className="font-medium">Status:</span> {reporte.status}</p>
               {reporte.evidencia && (
                 <p className="text-sm text-blue-600 mt-1">Archivo adjunto</p>
               )}
             </div>
+          </div>          {/* Descripción */}
+          <div className="mb-6">
+            <h3 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Descripción / resultados</h3>
+            <p className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-3 rounded`}>{reporte.descripcion}</p>
           </div>
 
-          {/* Descripción */}
-          <div className="mb-6">
-            <h3 className="font-semibold mb-2">Descripción / resultados</h3>
-            <p className="bg-gray-50 p-3 rounded">{reporte.descripcion}</p>
+          {/* Historial de estados */}
+          <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-4 rounded-lg mb-6`}>
+            <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white border-gray-600' : 'text-gray-800 border-gray-200'} border-b pb-2`}>Historial de estados</h3>
+            {loadingHist ? (
+              <p className="text-sm opacity-75">Cargando historial…</p>
+            ) : historial.length === 0 ? (
+              <p className="text-sm opacity-75">Sin registro de cambios</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {historial.map((h, i) => (
+                  <li key={i} className={`${darkMode ? 'bg-gray-800' : 'bg-white'} p-2 rounded border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <div className="flex justify-between">
+                      <span>
+                        {h.de_estado ? h.de_estado.replace(/_/g,' ').toLowerCase() : '—'} → {h.a_estado.replace(/_/g,' ').toLowerCase()}
+                      </span>
+                      <span className="opacity-70">{new Date(h.created_at).toLocaleString()}</span>
+                    </div>
+                    {h.motivo && <div className="mt-1 opacity-90">Motivo: {h.motivo}</div>}
+                    {h.actor && <div className="mt-1 opacity-90">Por: {h.actor.nombre}</div>}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Comentarios */}
           <div className="mb-6">
-            <label className="block font-semibold mb-2">Comentarios administrativos</label>
+            <label className={`block font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Comentarios administrativos</label>
             <textarea
-              className="w-full border border-gray-300 rounded-md p-2 min-h-[100px]"
+              className={`w-full border ${darkMode ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white'} rounded-md p-2 min-h-[100px]`}
               placeholder="Ingrese sus comentarios…"
               value={comments}
               onChange={(e) => setComments(e.target.value)}

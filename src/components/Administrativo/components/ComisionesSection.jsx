@@ -1,4 +1,5 @@
 import React from "react";
+import SkeletonList from "../../common/SkeletonList";
 import TabSelector from "../../Docente/components/TabSelector";
 import SolicitudCard from "./SolicitudCard";
 
@@ -7,6 +8,8 @@ export default function ComisionesSection({
   setActiveTab, 
   tabs, 
   solicitudesActivas, 
+  loading = false,
+  counts = {},
   handleReviewClick 
 }) {
   return (
@@ -16,11 +19,14 @@ export default function ComisionesSection({
         tabs={tabs} 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
+        counts={counts}
       />
 
       {/* Lista de Solicitudes */}
       <div className="space-y-4 flex-1 overflow-y-auto">
-        {solicitudesActivas.length > 0 ? (
+        {loading ? (
+          <SkeletonList rows={4} />
+        ) : solicitudesActivas.length > 0 ? (
           solicitudesActivas.map((solicitud, index) => (
             <SolicitudCard 
               key={index}

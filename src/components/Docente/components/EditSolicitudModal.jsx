@@ -1,12 +1,12 @@
 "use client"
 
-export default function EditSolicitudModal({ 
-  modalEditData, 
-  setModalEditData, 
-  handleSaveEdit, 
+export default function EditSolicitudModal({
+  modalEditData,
+  setModalEditData,
+  handleSaveEdit,
   handleDeleteClick,
-  tiposParticipacion, 
-  programasEducativos 
+  tiposParticipacion,
+  programasEducativos
 }) {
   return (
     modalEditData && (
@@ -14,7 +14,7 @@ export default function EditSolicitudModal({
         <div className="bg-white p-6 rounded-xl shadow-lg w-[800px] max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-6 pb-2 border-b border-gray-200">
             <h3 className="text-xl font-bold">Editar Solicitud</h3>
-            <button 
+            <button
               onClick={() => setModalEditData(null)}
               className="text-gray-500 hover:text-gray-700"
             >
@@ -23,7 +23,14 @@ export default function EditSolicitudModal({
               </svg>
             </button>
           </div>
-          
+
+          {/* Si fue Devuelta, mostrar motivo del administrador */}
+          {modalEditData?.comentariosAdmin && (
+            <div className="mb-4 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-sm text-yellow-900">
+              <strong>Motivo de devolución:</strong> {modalEditData.comentariosAdmin}
+            </div>
+          )}
+
           {/* Contenido del modal de edición */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             {/* Título de la comisión */}
@@ -38,7 +45,7 @@ export default function EditSolicitudModal({
                 onChange={(e) => setModalEditData({ ...modalEditData, titulo: e.target.value })}
               />
             </div>
-            
+
             {/* Solicitante */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -52,7 +59,7 @@ export default function EditSolicitudModal({
                 readOnly
               />
             </div>
-            
+
             {/* Tipo de participación (selector) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -60,15 +67,15 @@ export default function EditSolicitudModal({
               </label>
               <select
                 className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                value={modalEditData.tipoParticipacion}
-                onChange={(e) => setModalEditData({ ...modalEditData, tipoParticipacion: e.target.value })}
+                value={modalEditData.tipoParticipacionId ?? ""}
+                onChange={(e) => setModalEditData({ ...modalEditData, tipoParticipacionId: parseInt(e.target.value) })}
               >
                 {tiposParticipacion.map(tipo => (
-                  <option key={tipo} value={tipo}>{tipo}</option>
+                  <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
                 ))}
               </select>
             </div>
-            
+
             {/* Ciudad */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -81,7 +88,7 @@ export default function EditSolicitudModal({
                 onChange={(e) => setModalEditData({ ...modalEditData, ciudad: e.target.value })}
               />
             </div>
-            
+
             {/* País */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -94,7 +101,7 @@ export default function EditSolicitudModal({
                 onChange={(e) => setModalEditData({ ...modalEditData, pais: e.target.value })}
               />
             </div>
-            
+
             {/* Lugar */}
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -107,7 +114,7 @@ export default function EditSolicitudModal({
                 onChange={(e) => setModalEditData({ ...modalEditData, lugar: e.target.value })}
               />
             </div>
-            
+
             {/* Fechas de salida y regreso */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -120,7 +127,7 @@ export default function EditSolicitudModal({
                 onChange={(e) => setModalEditData({ ...modalEditData, fechaSalida: e.target.value })}
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Fecha de regreso
@@ -132,7 +139,7 @@ export default function EditSolicitudModal({
                 onChange={(e) => setModalEditData({ ...modalEditData, fechaRegreso: e.target.value })}
               />
             </div>
-            
+
             {/* Horas de salida y regreso */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -145,7 +152,7 @@ export default function EditSolicitudModal({
                 onChange={(e) => setModalEditData({ ...modalEditData, horaSalida: e.target.value })}
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Hora de regreso
@@ -157,7 +164,7 @@ export default function EditSolicitudModal({
                 onChange={(e) => setModalEditData({ ...modalEditData, horaRegreso: e.target.value })}
               />
             </div>
-            
+
             {/* Número de personas */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -171,7 +178,7 @@ export default function EditSolicitudModal({
                 onChange={(e) => setModalEditData({ ...modalEditData, numeroPersonas: parseInt(e.target.value) })}
               />
             </div>
-            
+
             {/* Necesita transporte */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -179,7 +186,7 @@ export default function EditSolicitudModal({
               </label>
               <div className="flex gap-4 mt-2">
                 <label className="inline-flex items-center">
-                  <input 
+                  <input
                     type="radio"
                     className="form-radio text-green-700"
                     name="necesitaTransporte"
@@ -189,7 +196,7 @@ export default function EditSolicitudModal({
                   <span className="ml-2">Sí</span>
                 </label>
                 <label className="inline-flex items-center">
-                  <input 
+                  <input
                     type="radio"
                     className="form-radio text-green-700"
                     name="necesitaTransporte"
@@ -200,7 +207,7 @@ export default function EditSolicitudModal({
                 </label>
               </div>
             </div>
-            
+
             {/* Cantidad de combustible (si necesita transporte) */}
             {modalEditData.necesitaTransporte && (
               <div>
@@ -216,7 +223,7 @@ export default function EditSolicitudModal({
                 />
               </div>
             )}
-            
+
             {/* Programa educativo */}
             <div className={modalEditData.necesitaTransporte ? "col-span-1" : "col-span-2"}>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -224,15 +231,15 @@ export default function EditSolicitudModal({
               </label>
               <select
                 className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                value={modalEditData.programaEducativo}
-                onChange={(e) => setModalEditData({ ...modalEditData, programaEducativo: e.target.value })}
+                value={modalEditData.programaEducativoId ?? ""}
+                onChange={(e) => setModalEditData({ ...modalEditData, programaEducativoId: parseInt(e.target.value) })}
               >
                 {programasEducativos.map(programa => (
-                  <option key={programa} value={programa}>{programa}</option>
+                  <option key={programa.id} value={programa.id}>{programa.nombre}</option>
                 ))}
               </select>
             </div>
-            
+
             {/* Proyecto de investigación */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -240,7 +247,7 @@ export default function EditSolicitudModal({
               </label>
               <div className="flex gap-4 mt-2">
                 <label className="inline-flex items-center">
-                  <input 
+                  <input
                     type="radio"
                     className="form-radio text-green-700"
                     name="proyectoInvestigacion"
@@ -250,7 +257,7 @@ export default function EditSolicitudModal({
                   <span className="ml-2">Sí</span>
                 </label>
                 <label className="inline-flex items-center">
-                  <input 
+                  <input
                     type="radio"
                     className="form-radio text-green-700"
                     name="proyectoInvestigacion"
@@ -261,7 +268,7 @@ export default function EditSolicitudModal({
                 </label>
               </div>
             </div>
-            
+
             {/* Se obtendrá constancia */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -269,7 +276,7 @@ export default function EditSolicitudModal({
               </label>
               <div className="flex gap-4 mt-2">
                 <label className="inline-flex items-center">
-                  <input 
+                  <input
                     type="radio"
                     className="form-radio text-green-700"
                     name="obtendraConstancia"
@@ -279,7 +286,7 @@ export default function EditSolicitudModal({
                   <span className="ml-2">Sí</span>
                 </label>
                 <label className="inline-flex items-center">
-                  <input 
+                  <input
                     type="radio"
                     className="form-radio text-green-700"
                     name="obtendraConstancia"
@@ -290,7 +297,7 @@ export default function EditSolicitudModal({
                 </label>
               </div>
             </div>
-            
+
             {/* Comentarios adicionales */}
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -304,17 +311,17 @@ export default function EditSolicitudModal({
               ></textarea>
             </div>
           </div>
-          
+
           {/* Nota informativa (si es una solicitud devuelta) */}
           {modalEditData.tab === "Devueltas" && (
             <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
-                <strong>Nota:</strong> Al guardar los cambios, esta solicitud pasará de "Devueltas" a "En revisión" y 
+                <strong>Nota:</strong> Al guardar los cambios, esta solicitud pasará de "Devueltas" a "En revisión" y
                 aparecerá en la pestaña de Pendientes.
               </p>
             </div>
           )}
-          
+
           {/* Botones de acción */}
           <div className="flex justify-between mt-6">
             {/* Botón de eliminar en el lado izquierdo */}
@@ -324,7 +331,7 @@ export default function EditSolicitudModal({
             >
               Eliminar solicitud
             </button>
-            
+
             {/* Botones de cancelar y guardar en el lado derecho */}
             <div className="flex gap-3">
               <button

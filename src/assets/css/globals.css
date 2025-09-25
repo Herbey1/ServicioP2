@@ -1,0 +1,51 @@
+/* globals.css */
+
+/* Estilos base para el modo oscuro usando las clases de Tailwind */
+.dark {
+  color-scheme: dark;
+}
+
+/* Estilos para el switch de darkMode */
+.bar {
+  display: block;
+  width: 24px;
+  height: 3px;
+  margin: 5px auto;
+  transition: all 0.3s ease-in-out;
+  border-radius: 2px;
+}
+
+/* Estilos para los scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Estilos específicos para modo oscuro */
+.dark ::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+/* Transiciones suaves para cambios de tema */
+body, div, span, button, input, textarea, select, a, p, h1, h2, h3, h4, h5, h6 {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}

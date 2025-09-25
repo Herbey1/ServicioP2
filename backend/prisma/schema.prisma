@@ -1,0 +1,311 @@
+// backend/prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "foreignKeys"
+}
+
+enum user_role {
+  DOCENTE
+  ADMIN
+
+  @@map("user_role")
+}
+
+enum solicitud_estado {
+  EN_REVISION
+  APROBADA
+  RECHAZADA
+  DEVUELTA
+  CANCELADA
+
+  @@map("solicitud_estado")
+}
+
+enum reporte_estado {
+  PENDIENTE
+  EN_REVISION
+  APROBADO
+  RECHAZADO
+  DEVUELTO
+
+  @@map("reporte_estado")
+}
+
+model usuarios {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nombre          String
+  correo          String    @unique @db.Citext
+  contrasena_hash String
+  rol             user_role @default(DOCENTE)
+  verificado      Boolean   @default(false)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at      DateTime? @db.Timestamptz(6)
+
+  // relaciones
+  solicitudes                  solicitudes[]
+  reportes                     reportes[]
+  auditoria                    auditoria[]
+  email_verifs                 email_verifications[]
+  password_resets              password_resets[]
+  login_attempts               login_attempts[]
+  solicitud_estados_hist_actor solicitud_estados_hist[] @relation("ActorSolicitudesHist")
+  reporte_estados_hist_actor   reporte_estados_hist[]   @relation("ActorReportesHist")
+  notificaciones               notificaciones[]         @relation("UsuarioNotificaciones")
+
+  @@map("usuarios")
+}
+
+model email_verifications {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String    @db.Uuid
+  token      String    @unique
+  expires_at DateTime  @db.Timestamptz(6)
+  used_at    DateTime? @db.Timestamptz(6)
+
+  user usuarios @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("email_verifications")
+}
+
+model password_resets {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String    @db.Uuid
+  token      String    @unique
+  expires_at DateTime  @db.Timestamptz(6)
+  used_at    DateTime? @db.Timestamptz(6)
+
+  user usuarios @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}
+
+model login_attempts {
+  id         BigInt               @id @default(autoincrement())
+  user_id    String?              @db.Uuid
+  correo     String?              @db.Citext
+  success    Boolean
+  ip         Unsupported("inet")?
+  created_at DateTime             @default(now()) @db.Timestamptz(6)
+
+  user usuarios? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@map("login_attempts")
+}
+
+model programas_educativos {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+
+  solicitudes solicitudes[]
+
+  @@map("programas_educativos")
+}
+
+model tipos_participacion {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+
+  solicitudes solicitudes[]
+
+  @@map("tipos_participacion")
+}
+
+model solicitudes {
+  id                     String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  docente_id             String           @db.Uuid
+  asunto                 String
+  tipo_participacion_id  Int
+  ciudad                 String
+  pais                   String
+  lugar                  String
+  fecha_salida           DateTime         @db.Date
+  hora_salida            DateTime         @db.Time(6)
+  fecha_regreso          DateTime         @db.Date
+  hora_regreso           DateTime         @db.Time(6)
+  num_personas           Int
+  usa_unidad_transporte  Boolean          @default(false)
+  cantidad_combustible   Decimal?         @db.Decimal(10, 2)
+  programa_educativo_id  Int
+  alumnos_beneficiados   Int
+  proyecto_investigacion String?
+  cuerpo_academico       String?
+  obtendra_constancia    Boolean          @default(false)
+  comentarios            String?
+  estado                 solicitud_estado @default(EN_REVISION)
+  motivo_estado          String?
+  created_at             DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime         @default(now()) @db.Timestamptz(6)
+
+  // relaciones
+  docente            usuarios                 @relation(fields: [docente_id], references: [id], onDelete: Restrict)
+  tipo_participacion tipos_participacion      @relation(fields: [tipo_participacion_id], references: [id])
+  programa_educativo programas_educativos     @relation(fields: [programa_educativo_id], references: [id])
+  archivos           solicitud_archivos[]
+  estados_hist       solicitud_estados_hist[]
+  reporte            reportes?
+
+  @@index([docente_id])
+  @@index([estado])
+  @@index([fecha_salida, fecha_regreso])
+  @@index([programa_educativo_id])
+  @@index([tipo_participacion_id])
+  @@map("solicitudes")
+}
+
+model solicitud_archivos {
+  id           String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  solicitud_id String   @db.Uuid
+  filename     String
+  mime_type    String
+  bytes        Int
+  url          String?
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  solicitud solicitudes @relation(fields: [solicitud_id], references: [id], onDelete: Cascade)
+
+  @@index([solicitud_id])
+  @@map("solicitud_archivos")
+}
+
+model solicitud_estados_hist {
+  id           BigInt            @id @default(autoincrement())
+  solicitud_id String            @db.Uuid
+  de_estado    solicitud_estado?
+  a_estado     solicitud_estado
+  motivo       String?
+  actor_id     String?           @db.Uuid
+  created_at   DateTime          @default(now()) @db.Timestamptz(6)
+
+  solicitud solicitudes @relation(fields: [solicitud_id], references: [id], onDelete: Cascade)
+  actor     usuarios?   @relation("ActorSolicitudesHist", fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@index([solicitud_id, created_at])
+  @@map("solicitud_estados_hist")
+}
+
+model reportes {
+  id           String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  solicitud_id String         @unique @db.Uuid
+  docente_id   String         @db.Uuid
+  descripcion  String?
+  estado       reporte_estado @default(PENDIENTE)
+  created_at   DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime       @default(now()) @db.Timestamptz(6)
+
+  solicitud solicitudes @relation(fields: [solicitud_id], references: [id], onDelete: Cascade)
+  docente   usuarios    @relation(fields: [docente_id], references: [id], onDelete: Restrict)
+
+  evidencias   reporte_evidencias[]
+  actividades  reporte_actividades[]
+  estados_hist reporte_estados_hist[]
+  recordatorio recordatorios_reportes?
+
+  @@index([docente_id])
+  @@index([estado])
+  @@map("reportes")
+}
+
+model reporte_evidencias {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  reporte_id String   @db.Uuid
+  filename   String
+  mime_type  String
+  bytes      Int
+  url        String?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  reporte reportes @relation(fields: [reporte_id], references: [id], onDelete: Cascade)
+
+  @@index([reporte_id])
+  @@map("reporte_evidencias")
+}
+
+model reporte_actividades {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  reporte_id  String    @db.Uuid
+  descripcion String
+  fecha       DateTime? @db.Date
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+
+  reporte reportes @relation(fields: [reporte_id], references: [id], onDelete: Cascade)
+
+  @@map("reporte_actividades")
+}
+
+model reporte_estados_hist {
+  id         BigInt          @id @default(autoincrement())
+  reporte_id String          @db.Uuid
+  de_estado  reporte_estado?
+  a_estado   reporte_estado
+  motivo     String?
+  actor_id   String?         @db.Uuid
+  created_at DateTime        @default(now()) @db.Timestamptz(6)
+
+  reporte reportes  @relation(fields: [reporte_id], references: [id], onDelete: Cascade)
+  actor   usuarios? @relation("ActorReportesHist", fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@index([reporte_id, created_at])
+  @@map("reporte_estados_hist")
+}
+
+model notificaciones {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  usuario_id String    @db.Uuid
+  asunto     String
+  mensaje    String
+  canal      String    @default("EMAIL")
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  sent_at    DateTime? @db.Timestamptz(6)
+
+  usuario usuarios @relation("UsuarioNotificaciones", fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@map("notificaciones")
+}
+
+model email_queue {
+  id           BigInt    @id @default(autoincrement())
+  to_email     String    @db.Citext
+  subject      String
+  body         String
+  scheduled_at DateTime  @default(now()) @db.Timestamptz(6)
+  sent_at      DateTime? @db.Timestamptz(6)
+  attempts     Int       @default(0)
+  last_error   String?
+
+  @@index([scheduled_at, sent_at])
+  @@map("email_queue")
+}
+
+model recordatorios_reportes {
+  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  reporte_id    String    @unique @db.Uuid
+  activo        Boolean   @default(true)
+  ultimo_envio  DateTime? @db.Timestamptz(6)
+  proximo_envio DateTime? @db.Timestamptz(6)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @db.Timestamptz(6)
+
+  reporte reportes @relation(fields: [reporte_id], references: [id], onDelete: Cascade)
+
+  @@map("recordatorios_reportes")
+}
+
+model auditoria {
+  id         BigInt   @id @default(autoincrement())
+  actor_id   String?  @db.Uuid
+  accion     String
+  entidad    String
+  entidad_id String
+  metadata   Json?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  actor usuarios? @relation(fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@map("auditoria")
+}
