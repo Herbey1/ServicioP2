@@ -38,7 +38,7 @@ export default function solicitudesRouter(prisma) {
   // ===== monta sub-rutas de archivos =====
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const UPLOAD_ROOT = path.join(__dirname, "..", "uploads");
+  const UPLOAD_ROOT = path.join(__dirname, "..", "..", "uploads");
 
   // /api/solicitudes/:id/archivos/*
   router.use("/:id/archivos", requireAuth, solicitudArchivosRouter(prisma, UPLOAD_ROOT));
@@ -104,8 +104,8 @@ export default function solicitudesRouter(prisma) {
         where: { id: req.params.id },
         include: {
           docente: { select: { nombre: true } },
-          solicitud_archivos: true,
-          solicitud_estados_hist: {
+          archivos: true,
+          estados_hist: {
             orderBy: { created_at: "asc" },
             select: {
               de_estado: true,
@@ -121,7 +121,13 @@ export default function solicitudesRouter(prisma) {
       if (req.user.rol !== "ADMIN" && s.docente_id !== req.user.sub)
         return res.status(403).json({ ok:false, msg: "Sin permisos" });
       // Alinear forma con listados y con /api/reportes
-      const out = { ...s, usuarios: { nombre: s.docente?.nombre ?? null } };
+      const { archivos, estados_hist, ...rest } = s;
+      const out = {
+        ...rest,
+        solicitud_archivos: archivos,
+        solicitud_estados_hist: estados_hist,
+        usuarios: { nombre: s.docente?.nombre ?? null }
+      };
       res.json(out);
     } catch (e) {
       console.error("ERROR detalle solicitud:", e);

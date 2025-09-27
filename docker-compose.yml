@@ -1,10 +1,22 @@
+version: "3.9"
+
+networks:
+  sgca_network:
+    driver: bridge
+
 services:
   db:
     image: postgres:15
+    networks:
+      - sgca_network
     restart: unless-stopped
     env_file: .env
     ports:
       - "${PGPORT}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bd}
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
     volumes:
       - sgca_pgdata:/var/lib/postgresql/data
       - ./SGCA_DB/initdb:/docker-entrypoint-initdb.d
@@ -14,11 +26,27 @@ services:
       timeout: 5s
       retries: 20
 
+  pgadmin:
+    image: dpage/pgadmin4:8
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    networks:
+      - sgca_network
+    depends_on:
+      db:
+        condition: service_healthy
+
   backend:
     build:
       context: ./backend
     container_name: sgca_backend
     restart: unless-stopped
+    networks:
+      - sgca_network
     env_file: .env
     ports:
       - "4000:4000"
@@ -27,7 +55,6 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
-      # Persistir archivos subidos por usuarios
       - ./backend/uploads:/app/uploads
       - /app/node_modules
 
@@ -37,9 +64,11 @@ services:
       dockerfile: Dockerfile.frontend
     container_name: sgca_frontend
     restart: unless-stopped
+    networks:
+      - sgca_network
     env_file: .env
     environment:
-      REACT_APP_API_URL: http://localhost:4000
+      REACT_APP_API_URL: ${REACT_APP_API_URL}
     ports:
       - "3000:3000"
     depends_on:
