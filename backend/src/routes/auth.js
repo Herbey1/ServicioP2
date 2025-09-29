@@ -7,28 +7,52 @@ export default function authRouter(prisma) {
 
   // POST /api/auth/login
   router.post("/login", async (req, res) => {
-    const { correo, password } = req.body;
+    const { correo, password, rolEsperado, rol, userType } = req.body;
 
-console.log(`\n[AUTH] Intento de login para: ${correo}`);
-    
-    if (!correo || !password) {
-      return res.status(400).json({ ok: false, msg: "Correo y contraseña requeridos" });
+    const providedRole = rolEsperado ?? rol ?? userType;
+    const normalizedRole = typeof providedRole === "string" ? providedRole.trim().toUpperCase() : "";
+
+    console.log(`\n[AUTH] Intento de login para: ${correo} (rol esperado: ${normalizedRole || "sin especificar"})`);
+
+    if (!correo || !password || !normalizedRole) {
+      return res.status(400).json({ ok: false, msg: "Correo, password y rol esperados son requeridos" });
+    }
+
+    const roleMap = {
+      ADMINISTRADOR: "ADMIN",
+      ADMIN: "ADMIN",
+      DOCENTE: "DOCENTE"
+    };
+
+    const expectedRole = roleMap[normalizedRole];
+
+    if (!expectedRole) {
+      return res.status(400).json({ ok: false, msg: "Rol esperado no soportado" });
     }
 
     const user = await prisma.usuarios.findUnique({ where: { correo } });
-    
+
     if (!user) {
       console.error(`[AUTH] Error: Usuario con correo "${correo}" no fue encontrado en la base de datos.`);
-      return res.status(401).json({ ok: false, msg: "Credenciales inválidas" });
+      return res.status(401).json({ ok: false, msg: "Credenciales invalidas" });
     }
-    
+
+    const userRole = typeof user.rol === "string" ? user.rol.trim().toUpperCase() : "";
+
+    if (userRole !== expectedRole) {
+      console.warn(`[AUTH] Error: Rol seleccionado (${expectedRole}) no coincide con rol real (${userRole})`);
+      return res.status(403).json({ ok: false, msg: "El correo no corresponde al tipo de usuario seleccionado" });
+    }
+
     console.log(`[AUTH] Usuario encontrado: ${user.nombre}`);
 
     const ok = await bcrypt.compare(password, user.contrasena_hash);
-    
+
     console.log(`[AUTH] Resultado de bcrypt.compare: ${ok}`);
 
-    if (!ok) return res.status(401).json({ ok: false, msg: "Credenciales inválidas" });
+    if (!ok) {
+      return res.status(401).json({ ok: false, msg: "Credenciales invalidas" });
+    }
 
     const token = jwt.sign({ sub: user.id, rol: user.rol }, process.env.JWT_SECRET, { expiresIn: "8h" });
 

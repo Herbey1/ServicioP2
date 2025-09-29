@@ -5,7 +5,8 @@ export default function LoginForm({
   setEmail, 
   password, 
   setPassword, 
-  handleSubmit 
+  handleSubmit,
+  errorMessage 
 }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -38,6 +39,12 @@ export default function LoginForm({
           <a href="#" className="text-gray-500 text-sm">¿Olvidaste tu contraseña?</a>
         </div>
       </div>
+
+      {errorMessage && (
+        <div className="text-red-600 text-sm mt-2" role="alert">
+          {errorMessage}
+        </div>
+      )}
 
       <button type="submit" className="w-full bg-green-700 text-white py-3 rounded-md font-medium mt-4">
         Iniciar sesión
