@@ -10,12 +10,11 @@ export async function apiFetch(path, { method = 'GET', headers = {}, body, token
   if (auth) {
     opts.headers['Authorization'] = `Bearer ${auth}`;
   }
+
   const res = await fetch(`${API_URL}${path}`, opts);
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || res.statusText);
-  }
-  return res.json();
+  const data = await res.json().catch(() => ({})); // por si la respuesta no es JSON
+
+  return { ok: res.ok, status: res.status, data };
 }
 
 export { API_URL };

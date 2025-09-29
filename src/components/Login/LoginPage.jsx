@@ -1,89 +1,79 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { apiFetch } from "../../api/client"
-// Componentes
-import LoginSidebar from "./components/LoginSidebar"
-import LoginHeader from "./components/LoginHeader"
-import UserTypeSelector from "./components/UserTypeSelector"
-import LoginForm from "./components/LoginForm"
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../../api/client";
+import LoginSidebar from "./components/LoginSidebar";
+import LoginHeader from "./components/LoginHeader";
+import UserTypeSelector from "./components/UserTypeSelector";
+import LoginForm from "./components/LoginForm";
 
 function LoginPage({ setIsAuthenticated, setUserRole }) {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [userType, setUserType] = useState("docente")
-  const navigate = useNavigate()
-  
- const handleSubmit = async (e) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [userType, setUserType] = useState("docente");
+  const [errorMessage, setErrorMessage] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
 
-    // --- INICIO DE LA MODIFICACIÓN ---
-
-    // 1. Limpiamos los espacios en blanco del email y la contraseña
     const cleanEmail = email.trim();
     const cleanPassword = password.trim();
+    const fullEmail = cleanEmail.includes("@") ? cleanEmail : `${cleanEmail}@uabc.edu.mx`;
 
-    const fullEmail = cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@uabc.edu.mx`;
-    
-    if (!cleanEmail || !cleanPassword){
-      console.log("Por favor, completa todos los campos")
+    if (!cleanEmail || !cleanPassword) {
+      setErrorMessage("Por favor completa todos los campos.");
       return;
     }
 
     try {
-      const data = await apiFetch("/api/auth/login", {
+      const res = await apiFetch("/api/auth/login", {
         method: "POST",
-        // 2. Enviamos los datos limpios al backend
-        body: { correo: fullEmail, password: cleanPassword }
+        body: { correo: fullEmail, password: cleanPassword },
       });
 
-    // --- FIN DE LA MODIFICACIÓN ---
+      if (res.ok) {
+        const { token, user } = res.data;
+        setErrorMessage("");
+        localStorage.setItem("token", token);
+        localStorage.setItem("userName", user?.nombre ?? "");
 
-      if (data?.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userName', data.user.nombre);
-        // Aquí detectamos el rol que nos devuelve el backend
-        const rol = data.user.rol === 'ADMIN' ? 'admin' : 'docente';
+        const rol = user?.rol === "ADMIN" ? "admin" : "docente";
         setIsAuthenticated(true);
         setUserRole(rol);
-        // Y redirigimos a la página correcta
-        if (rol === 'docente') navigate('/dashboard');
-        else navigate('/admin');
-     } else {
-      console.log("Credenciales inválidas");
-     }
+        navigate(rol === "docente" ? "/dashboard" : "/admin");
+      } else if (res.status === 401) {
+        setErrorMessage("Credenciales inválidas. Verifica tu usuario y contraseña.");
+      } else {
+        setErrorMessage("Ocurrió un error en el servidor.");
+      }
     } catch (err) {
       console.error("Error al iniciar sesión", err);
+      setErrorMessage("No se pudo conectar con el servidor.");
     }
-  }
+  };
 
   return (
     <div className="flex h-screen w-full">
-      {/* Sidebar con imagen y botones de selección de modo */}
       <LoginSidebar />
-
-      {/* Formulario principal */}
       <div className="w-2/3 flex items-center justify-center bg-gray-100">
         <div className="w-[450px] p-8">
-          {/* Cabecera con logo y títulos */}
           <LoginHeader />
-
-          {/* Selector de tipo de usuario */}
           <UserTypeSelector userType={userType} setUserType={setUserType} />
-
-          {/* Formulario de login */}
           <LoginForm
             email={email}
             setEmail={setEmail}
             password={password}
             setPassword={setPassword}
             handleSubmit={handleSubmit}
+            errorMessage={errorMessage}
           />
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default LoginPage
+export default LoginPage;
