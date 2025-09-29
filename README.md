@@ -72,6 +72,9 @@ Esto construirá y arrancará tres contenedores:
   - Usuario: `admin@uabc.edu.mx`
   - Password: `WkdbdY45LFtvoBdhfcGkGQ`
 
+  - Usuario: `docente@uabc.edu.mx`
+  - Password: `Docente123!`
+
 ---
 
 ## 6. Apagar los servicios

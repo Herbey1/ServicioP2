@@ -28,29 +28,55 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
       return;
     }
 
+    const roleMap = {
+      docente: "DOCENTE",
+      administrador: "ADMIN",
+    };
+    const expectedRole = roleMap[userType] ?? "DOCENTE";
+
     try {
-      const res = await apiFetch("/api/auth/login", {
+      const response = await apiFetch("/api/auth/login", {
         method: "POST",
-        body: { correo: fullEmail, password: cleanPassword },
+        body: {
+          correo: fullEmail,
+          password: cleanPassword,
+          rolEsperado: expectedRole,
+          userType,
+        },
       });
 
-      if (res.ok) {
-        const { token, user } = res.data;
+      if (response.ok && response.data?.ok) {
+        const { token, user } = response.data;
+        const backendRole = typeof user?.rol === "string" ? user.rol.trim().toUpperCase() : "";
+
+        if (backendRole !== expectedRole) {
+          setErrorMessage("El correo no corresponde al tipo de usuario seleccionado.");
+          return;
+        }
+
         setErrorMessage("");
         localStorage.setItem("token", token);
         localStorage.setItem("userName", user?.nombre ?? "");
 
-        const rol = user?.rol === "ADMIN" ? "admin" : "docente";
+        const rol = backendRole === "ADMIN" ? "admin" : "docente";
         setIsAuthenticated(true);
         setUserRole(rol);
         navigate(rol === "docente" ? "/dashboard" : "/admin");
-      } else if (res.status === 401) {
-        setErrorMessage("Credenciales inválidas. Verifica tu usuario y contraseña.");
-      } else {
-        setErrorMessage("Ocurrió un error en el servidor.");
+        return;
       }
+
+      const serverMessage =
+        response.data?.msg ||
+        (response.status === 401
+          ? "Credenciales invalidas. Verifica tu usuario y contrasena."
+          : response.status === 403
+          ? "El correo no corresponde al tipo de usuario seleccionado."
+          : response.status === 400
+          ? "Selecciona un tipo de usuario valido."
+          : "Ocurrio un error en el servidor.");
+      setErrorMessage(serverMessage);
     } catch (err) {
-      console.error("Error al iniciar sesión", err);
+      console.error("Error al iniciar sesion", err);
       setErrorMessage("No se pudo conectar con el servidor.");
     }
   };
