@@ -6,7 +6,8 @@ export default function Sidebar({
   sidebarOpen,
   toggleSidebar,
   confirmLogout,
-  showProfile = true
+  showProfile = true,
+  extraItems = []
 }) {
   // Ya no necesitamos darkMode aquí ya que eliminamos el menú hamburguesa
   
@@ -23,7 +24,8 @@ export default function Sidebar({
             {[
               { label: "Comisiones", key: "Comisiones" },
               { label: "Reportes", key: "Reportes" },
-              ...(showProfile ? [{ label: "Perfil", key: "Perfil"}] : [])
+              ...(showProfile ? [{ label: "Perfil", key: "Perfil"}] : []),
+              ...extraItems
             ].map(({ label, key }) => (
               <li key={key}>
                 <button

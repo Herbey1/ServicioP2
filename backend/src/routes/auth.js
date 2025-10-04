@@ -37,6 +37,11 @@ export default function authRouter(prisma) {
       return res.status(401).json({ ok: false, msg: "Credenciales invalidas" });
     }
 
+    if (user.deleted_at) {
+      console.warn(`[AUTH] Error: Usuario ${correo} está deshabilitado`);
+      return res.status(403).json({ ok: false, msg: "El usuario está deshabilitado" });
+    }
+
     const userRole = typeof user.rol === "string" ? user.rol.trim().toUpperCase() : "";
 
     if (userRole !== expectedRole) {

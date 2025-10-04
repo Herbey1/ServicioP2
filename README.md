@@ -28,7 +28,10 @@ cd ServicioP2
 2. Si lo deseas, edita `.env` para ajustar:
    - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `PGPORT`
    - `JWT_SECRET`
-   - `REACT_APP_API_URL` (por defecto apunta al backend en Docker)
+   - `VITE_API_URL` (por defecto `http://backend:4000` para Docker)
+
+   Si ejecutas el frontend directamente con `npm run dev`, crea un `.env.local` con
+   `VITE_API_URL=http://localhost:4000` para seguir apuntando al backend local.
 
 ---
 

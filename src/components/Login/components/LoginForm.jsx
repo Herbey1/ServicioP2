@@ -8,6 +8,8 @@ export default function LoginForm({
   handleSubmit,
   errorMessage 
 }) {
+  const canSubmit = email.trim().length > 0 && password.trim().length > 0;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
@@ -46,7 +48,15 @@ export default function LoginForm({
         </div>
       )}
 
-      <button type="submit" className="w-full bg-green-700 text-white py-3 rounded-md font-medium mt-4">
+      <button
+        type="submit"
+        disabled={!canSubmit}
+        className={`w-full py-3 rounded-md font-medium mt-4 transition-colors ${
+          canSubmit
+            ? 'bg-green-700 text-white hover:bg-green-800 cursor-pointer'
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+        }`}
+      >
         Iniciar sesión
       </button>
     </form>
