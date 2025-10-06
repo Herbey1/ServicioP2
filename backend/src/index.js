@@ -8,6 +8,7 @@ import authRouter from "./routes/auth.js";
 import solicitudesRouter from "./routes/solicitudes.js";
 import reportesRouter from "./routes/reportes.js";
 import { requireAuth, requireRole } from "./middleware/auth.js";
+import usuariosRouter from "./routes/usuarios.js";
 
 dotenv.config();
 const app = express();
@@ -48,6 +49,14 @@ app.use("/api/solicitudes", requireAuth, solicitudesRouter(prisma));
 
 // Reportes (todas requieren login)
 app.use("/api/reportes", requireAuth, reportesRouter(prisma));
+
+// Gestión de usuarios (solo ADMIN)
+app.use(
+  "/api/usuarios",
+  requireAuth,
+  requireRole("ADMIN"),
+  usuariosRouter(prisma)
+);
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => console.log(`API on http://localhost:${port}`));

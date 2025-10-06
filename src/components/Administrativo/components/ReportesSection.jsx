@@ -3,6 +3,7 @@
 import TabSelector from "../../Docente/components/TabSelector"
 import ReportCard  from "./ReportCard"
 import SkeletonList from "../../common/SkeletonList"
+import { useTheme } from "../../../context/ThemeContext"
 
 export default function ReportesSection({
   activeTab,
@@ -13,6 +14,8 @@ export default function ReportesSection({
   counts = {},
   handleReviewClick
 }) {
+  const { darkMode } = useTheme();
+
   return (
     <>
       {/* Tabs */}
@@ -36,7 +39,7 @@ export default function ReportesSection({
             />
           ))
         ) : (
-          <div className="text-center py-10 text-gray-500">
+          <div className={`text-center py-10 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             No hay reportes {activeTab.toLowerCase()}
           </div>
         )}
@@ -44,7 +47,10 @@ export default function ReportesSection({
         {/* Placeholders si está vacío */}
         {reportesActivos.length === 0 &&
           [...Array(2)].map((_, i) => (
-            <div key={i} className="bg-gray-100 rounded-xl px-4 py-6 h-[60px]" />
+            <div
+              key={i}
+              className={`${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100'} rounded-xl px-4 py-6 h-[60px]`}
+            />
           ))}
       </div>
     </>

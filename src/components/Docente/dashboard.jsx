@@ -107,11 +107,15 @@ export default function DashboardDocente({ setIsAuthenticated }) {
     async function load() {
       try {
         setLoadingSolicitudes(true);
-        const [resp, tipos, programas] = await Promise.all([
+        const [solicitudesRes, tiposRes, programasRes] = await Promise.all([
           apiFetch('/api/solicitudes'),
           apiFetch('/api/catalogos/tipos-participacion'),
           apiFetch('/api/catalogos/programas')
         ]);
+
+        const solicitudData = solicitudesRes?.data ?? {};
+        const tiposList = Array.isArray(tiposRes?.data) ? tiposRes.data : [];
+        const programasList = Array.isArray(programasRes?.data) ? programasRes.data : [];
 
         const grouped = { Pendientes: [], Aprobadas: [], Rechazadas: [], Devueltas: [] };
         const userName = localStorage.getItem('userName') || '';
@@ -122,7 +126,8 @@ export default function DashboardDocente({ setIsAuthenticated }) {
           DEVUELTA: { tab: 'Devueltas', status: 'Devuelta' }
         };
         const aprobadas = [];
-        (resp.items || []).forEach(item => {
+        const items = Array.isArray(solicitudData.items) ? solicitudData.items : [];
+        items.forEach(item => {
           const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
           const sItem = {
             id: item.id,
@@ -137,12 +142,12 @@ export default function DashboardDocente({ setIsAuthenticated }) {
         });
         setSolicitudesPorTab(grouped);
         setSolicitudesAprobadas(aprobadas);
-        setTiposParticipacion(tipos);
-        setProgramasEducativos(programas);
+        setTiposParticipacion(tiposList);
+        setProgramasEducativos(programasList);
         setNewSolicitud(prev => ({
           ...prev,
-          tipoParticipacionId: tipos[0]?.id || null,
-          programaEducativoId: programas[0]?.id || null,
+          tipoParticipacionId: tiposList[0]?.id || null,
+          programaEducativoId: programasList[0]?.id || null,
         }));
       } catch (e) {
         console.error('Error cargando datos iniciales', e);

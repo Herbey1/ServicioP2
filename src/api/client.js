@@ -1,4 +1,4 @@
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
 
 export async function apiFetch(path, { method = 'GET', headers = {}, body, token } = {}) {
   const opts = { method, headers: { ...headers } };
@@ -10,12 +10,11 @@ export async function apiFetch(path, { method = 'GET', headers = {}, body, token
   if (auth) {
     opts.headers['Authorization'] = `Bearer ${auth}`;
   }
+
   const res = await fetch(`${API_URL}${path}`, opts);
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || res.statusText);
-  }
-  return res.json();
+  const data = await res.json().catch(() => ({})); // por si la respuesta no es JSON
+
+  return { ok: res.ok, status: res.status, data };
 }
 
 export { API_URL };

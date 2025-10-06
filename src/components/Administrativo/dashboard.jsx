@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom"
 import { useTheme } from "../../context/ThemeContext"
 import { apiFetch } from "../../api/client"
 import { useToast } from "../../context/ToastContext"
-import SkeletonList from "../common/SkeletonList"
 
 /* ── Componentes compartidos ─ */
 import Sidebar            from "../Docente/components/Sidebar"
@@ -15,19 +14,26 @@ import LogoutConfirmModal from "../Docente/components/LogoutConfirmModal"
 import MainContent          from "./components/MainContent"
 import ReviewSolicitudModal from "./components/ReviewSolicitudModal"
 import ReviewReporteModal   from "./components/ReviewReporteModal"
+import AddDocenteModal      from "./components/AddDocenteModal"
 
 export default function AdminDashboard({ setIsAuthenticated }) {
   /* ------------- UI general ------------- */
   const navigate = useNavigate()
   const { darkMode } = useTheme();
   const { showToast } = useToast();
-  const [activeSection, setActiveSection] = useState("Comisiones")      // "Comisiones" | "Reportes"
+  const [activeSection, setActiveSection] = useState("Comisiones")      // "Comisiones" | "Reportes" | "Usuarios"
   const tabsComisiones = ["Pendientes", "Aprobadas", "Rechazadas", "Devueltas"]
   const tabsReportes   = ["Pendientes", "Aprobados", "Rechazados", "Devueltos"]
   const [activeTabComisiones, setActiveTabComisiones] = useState("Pendientes")
   const [activeTabReportes,   setActiveTabReportes]   = useState("Pendientes")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showLogout,  setShowLogout]  = useState(false)
+  const [showAddDocente, setShowAddDocente] = useState(false)
+  const [addingDocente, setAddingDocente] = useState(false)
+  const [usuarios, setUsuarios] = useState([])
+  const [loadingUsuarios, setLoadingUsuarios] = useState(false)
+  const [userActionId, setUserActionId] = useState(null)
+  const [deletingUserId, setDeletingUserId] = useState(null)
 
   /* ------------- COMISIONES ------------- */
   const [solicitudesPorTab, setSolicitudesPorTab] = useState({
@@ -75,6 +81,28 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   useEffect(() => {
     loadSolicitudes();
   }, []);
+
+  const loadUsuarios = async () => {
+    try {
+      setLoadingUsuarios(true);
+      const resp = await apiFetch('/api/usuarios');
+      if (!resp.ok) {
+        throw new Error(resp.data?.msg || 'Error al obtener usuarios');
+      }
+      setUsuarios(resp.data?.items || []);
+    } catch (e) {
+      console.error('Error cargando usuarios', e);
+      showToast('No se pudieron cargar los usuarios', { type: 'error' });
+    } finally {
+      setLoadingUsuarios(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSection === 'Usuarios') {
+      loadUsuarios();
+    }
+  }, [activeSection]);
 
   const handleReviewSolicitud = (tab, index, solicitud) =>
     setModalSolicitud({ tab, index, solicitud: { ...solicitud } })
@@ -306,6 +334,104 @@ export default function AdminDashboard({ setIsAuthenticated }) {
       console.error('Error devolviendo reporte', e)
     }
   }
+  
+  const handleAddDocente = async ({ nombre, correo, rol, password }) => {
+    const payload = {
+      nombre: (nombre || '').trim(),
+      correo: (correo || '').trim(),
+      rol,
+      password: password?.trim()
+    }
+    if (!payload.nombre || !payload.correo || !payload.password) return
+
+    try {
+      setAddingDocente(true)
+      const resp = await apiFetch('/api/usuarios', {
+        method: 'POST',
+        body: payload
+      })
+      if (!resp.ok) {
+        throw new Error(resp.data?.msg || 'No se pudo crear el usuario')
+      }
+      showToast('Usuario agregado correctamente', { type: 'success' })
+      setShowAddDocente(false)
+      await loadUsuarios()
+    } catch (e) {
+      console.error('Error agregando usuario', e)
+      showToast(e?.message || 'No se pudo agregar el usuario', { type: 'error' })
+    } finally {
+      setAddingDocente(false)
+    }
+  }
+
+  const handleChangeUserRole = async (userId, nextRole) => {
+    setUserActionId(userId)
+    try {
+      const resp = await apiFetch(`/api/usuarios/${userId}`, {
+        method: 'PATCH',
+        body: { rol: nextRole }
+      })
+      if (!resp.ok) {
+        throw new Error(resp.data?.msg || 'No se pudo actualizar el rol')
+      }
+      showToast('Rol actualizado', { type: 'success' })
+      await loadUsuarios()
+    } catch (e) {
+      console.error('Error actualizando rol', e)
+      showToast(e?.message || 'No se pudo actualizar el rol', { type: 'error' })
+    } finally {
+      setUserActionId(null)
+    }
+  }
+
+  const handleToggleUserActive = async (userId, shouldActivate) => {
+    setUserActionId(userId)
+    try {
+      const resp = shouldActivate
+        ? await apiFetch(`/api/usuarios/${userId}`, {
+            method: 'PATCH',
+            body: { activo: true }
+          })
+        : await apiFetch(`/api/usuarios/${userId}`, {
+            method: 'DELETE'
+          })
+
+      if (!resp.ok) {
+        throw new Error(resp.data?.msg || 'No se pudo actualizar el usuario')
+      }
+
+      showToast(shouldActivate ? 'Usuario reactivado' : 'Usuario deshabilitado', { type: 'success' })
+      await loadUsuarios()
+    } catch (e) {
+      console.error('Error cambiando estado de usuario', e)
+      showToast(e?.message || 'No se pudo actualizar el usuario', { type: 'error' })
+    } finally {
+      setUserActionId(null)
+    }
+  }
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('¿Seguro que deseas eliminar este usuario de forma permanente?')) return
+    setDeletingUserId(userId)
+    try {
+      const resp = await apiFetch(`/api/usuarios/${userId}/permanent`, { method: 'DELETE' })
+      if (!resp.ok) {
+        throw new Error(resp.data?.msg || 'No se pudo eliminar el usuario')
+      }
+      showToast('Usuario eliminado definitivamente', { type: 'success' })
+      await loadUsuarios()
+    } catch (e) {
+      console.error('Error eliminando usuario', e)
+      showToast(e?.message || 'No se pudo eliminar el usuario', { type: 'error' })
+    } finally {
+      setDeletingUserId(null)
+    }
+  }
+
+  const closeAddDocente = () => {
+    if (addingDocente) return
+    setShowAddDocente(false)
+  }
   /* ------------- Auxiliares UI ------------- */  const toggleSidebar   = () => setSidebarOpen(!sidebarOpen)
   const showLogoutModal = () => setShowLogout(true)
   const hideLogoutModal = () => setShowLogout(false)
@@ -334,6 +460,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         toggleSidebar={toggleSidebar}
         confirmLogout={showLogoutModal}
         showProfile={false}
+        extraItems={[{ label: 'Usuarios', key: 'Usuarios' }]}
       />
 
       <MainContent
@@ -349,10 +476,14 @@ export default function AdminDashboard({ setIsAuthenticated }) {
             : setActiveTabReportes
         }
         tabs={activeSection === "Comisiones" ? tabsComisiones : tabsReportes}
+        onAddDocenteClick={() => setShowAddDocente(true)}
+        disableAddDocenteButton={addingDocente}
         solicitudesActivas={solicitudesActivas}
         reportesActivos={reportesActivos}
         loadingSolicitudes={loadingSolicitudes}
         loadingReportes={loadingReportes}
+        loadingUsuarios={loadingUsuarios}
+        usuarios={usuarios}
         counts={
           activeSection === 'Comisiones'
             ? {
@@ -361,15 +492,29 @@ export default function AdminDashboard({ setIsAuthenticated }) {
                 Rechazadas: solicitudesPorTab.Rechazadas.length,
                 Devueltas: solicitudesPorTab.Devueltas.length,
               }
-            : {
+            : activeSection === 'Reportes'
+            ? {
                 Pendientes: reportesPorTab.Pendientes.length,
                 Aprobados: reportesPorTab.Aprobados.length,
                 Rechazados: reportesPorTab.Rechazados.length,
                 Devueltos: reportesPorTab.Devueltos.length,
               }
+            : {}
         }
         handleReviewSolicitud={handleReviewSolicitud}
         handleReviewReporte={handleReviewReporte}
+        handleChangeUserRole={handleChangeUserRole}
+        handleToggleUserActive={handleToggleUserActive}
+        handleDeleteUser={handleDeleteUser}
+        userActionId={userActionId}
+        deletingUserId={deletingUserId}
+      />
+
+      <AddDocenteModal
+        isOpen={showAddDocente}
+        onClose={closeAddDocente}
+        onSubmit={handleAddDocente}
+        submitting={addingDocente}
       />
 
       {/* Modal SOLICITUD */}

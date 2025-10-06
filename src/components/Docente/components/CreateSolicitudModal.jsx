@@ -20,6 +20,8 @@ export default function CreateSolicitudModal({
   const sectionTitleClass = `text-lg font-semibold mb-3 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`;
   const buttonPrimaryClass = `px-6 py-2 bg-green-700 text-white font-medium rounded-full hover:bg-green-800`;
   const buttonSecondaryClass = `px-6 py-2 font-medium rounded-full ${darkMode ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`;
+  const tipoOptions = Array.isArray(tiposParticipacion) ? tiposParticipacion : [];
+  const programaOptions = Array.isArray(programasEducativos) ? programasEducativos : [];
 
   return (
     showCreateModal && (
@@ -75,10 +77,14 @@ export default function CreateSolicitudModal({
               <select
                 className={inputClass}
                 value={newSolicitud.tipoParticipacionId ?? ""}
-                onChange={(e) => setNewSolicitud({ ...newSolicitud, tipoParticipacionId: parseInt(e.target.value) })}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value, 10);
+                  setNewSolicitud({ ...newSolicitud, tipoParticipacionId: Number.isNaN(value) ? null : value });
+                }}
                 required
               >
-                {tiposParticipacion.map(tipo => (
+                <option value="">Selecciona una opción</option>
+                {tipoOptions.map(tipo => (
                   <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
                 ))}
               </select>
@@ -238,10 +244,14 @@ export default function CreateSolicitudModal({
               <select
                 className={inputClass}
                 value={newSolicitud.programaEducativoId ?? ""}
-                onChange={(e) => setNewSolicitud({ ...newSolicitud, programaEducativoId: parseInt(e.target.value) })}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value, 10);
+                  setNewSolicitud({ ...newSolicitud, programaEducativoId: Number.isNaN(value) ? null : value });
+                }}
                 required
               >
-                {programasEducativos.map(programa => (
+                <option value="">Selecciona una opción</option>
+                {programaOptions.map(programa => (
                   <option key={programa.id} value={programa.id}>{programa.nombre}</option>
                 ))}
               </select>
