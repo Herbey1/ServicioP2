@@ -2,6 +2,7 @@
 
 import ComisionesSection from "./ComisionesSection"
 import ReportesSection   from "./ReportesSection"
+import UsuariosSection   from "./UsuariosSection"
 import Header            from "./Header"
 import { useTheme } from "../../../context/ThemeContext"
 
@@ -12,15 +13,24 @@ export default function MainContent({
   activeSection, setActiveSection,
   activeTab,     setActiveTab,
   tabs,
+  onAddDocenteClick,
+  disableAddDocenteButton = false,
   /* Datos */
   solicitudesActivas,
   reportesActivos,
+  usuarios = [],
   loadingSolicitudes = false,
   loadingReportes = false,
+  loadingUsuarios = false,
   counts,
   /* Callbacks de revisión */
   handleReviewSolicitud,
-  handleReviewReporte
+  handleReviewReporte,
+  handleChangeUserRole,
+  handleToggleUserActive,
+  handleDeleteUser,
+  userActionId,
+  deletingUserId
 }) {  const { darkMode } = useTheme();
 
   return (
@@ -35,13 +45,17 @@ export default function MainContent({
         setActiveSection={setActiveSection}
         isAdmin
         title="Panel de Administración"
+        onAddDocenteClick={activeSection === "Usuarios" ? null : onAddDocenteClick}
+        disableAddDocente={disableAddDocenteButton}
       />
 
       {/* Título dinámico */}
       <h2 className="text-2xl font-bold mb-6">
         {activeSection === "Comisiones"
           ? "Solicitudes de comisiones"
-          : "Reportes académicos"}
+          : activeSection === "Reportes"
+          ? "Reportes académicos"
+          : "Gestión de usuarios"}
       </h2>
 
       {/* Contenido según sección */}
@@ -55,7 +69,7 @@ export default function MainContent({
           counts={counts}
           handleReviewClick={handleReviewSolicitud}
         />
-      ) : (
+      ) : activeSection === "Reportes" ? (
         <ReportesSection
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -64,6 +78,18 @@ export default function MainContent({
           loading={loadingReportes}
           counts={counts}
           handleReviewClick={handleReviewReporte}
+        />
+      ) : (
+        <UsuariosSection
+          usuarios={usuarios}
+          loading={loadingUsuarios}
+          onChangeRole={handleChangeUserRole}
+          onToggleActive={handleToggleUserActive}
+          onDeleteUser={handleDeleteUser}
+          busyUserId={userActionId}
+          deletingUserId={deletingUserId}
+          onAddUser={onAddDocenteClick}
+          addingUser={disableAddDocenteButton}
         />
       )}
     </div>
