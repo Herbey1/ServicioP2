@@ -13,50 +13,53 @@ export default function Header({
 }) {
   const { darkMode } = useTheme();
 
+  const showSectionSwitch = activeSection !== "Usuarios";
+
   return (
-    <div className={`flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6">
+    <div className={`flex flex-col gap-4 mb-8 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         {title && (
           <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-700'}`}>
             {title}
           </h1>
         )}
 
-        {activeSection !== "Usuarios" && (
-          <div className={`flex ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full p-1 w-full sm:w-64`}>
-            <button
-              onClick={() => setActiveSection("Comisiones")}
-              className={`w-1/2 py-2 rounded-full font-medium text-sm transition-all ${
-                activeSection === "Comisiones" 
-                  ? "bg-green-700 text-white" 
-                  : darkMode 
-                    ? "text-gray-200 hover:bg-gray-600" 
-                    : "text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Comisiones
-            </button>
-            <button
-              onClick={() => setActiveSection("Reportes")}
-              className={`w-1/2 py-2 rounded-full font-medium text-sm transition-all ${
-                activeSection === "Reportes" 
-                  ? "bg-green-700 text-white" 
-                  : darkMode 
-                    ? "text-gray-200 hover:bg-gray-600" 
-                    : "text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Reportes
-            </button>
-          </div>
-        )}
-      </div>
-      
-      <div className="flex items-center gap-4">
-        {/* Toggle de Modo Oscuro */}
-        <DarkModeToggle />
+        <div className="flex items-center gap-3 justify-between md:justify-end md:min-w-[220px]">
+          <DarkModeToggle />
 
-        {isAdmin && onAddDocenteClick && activeSection === "Usuarios" && (
+          {showSectionSwitch && (
+            <div className={`flex ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full p-1 w-full sm:w-64`}>
+              <button
+                onClick={() => setActiveSection("Comisiones")}
+                className={`w-1/2 py-2 rounded-full font-medium text-sm transition-all ${
+                  activeSection === "Comisiones"
+                    ? "bg-green-700 text-white"
+                    : darkMode
+                      ? "text-gray-200 hover:bg-gray-600"
+                      : "text-gray-700 hover:bg-gray-300"
+                }`}
+              >
+                Comisiones
+              </button>
+              <button
+                onClick={() => setActiveSection("Reportes")}
+                className={`w-1/2 py-2 rounded-full font-medium text-sm transition-all ${
+                  activeSection === "Reportes"
+                    ? "bg-green-700 text-white"
+                    : darkMode
+                      ? "text-gray-200 hover:bg-gray-600"
+                      : "text-gray-700 hover:bg-gray-300"
+                }`}
+              >
+                Reportes
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isAdmin && onAddDocenteClick && activeSection === "Usuarios" && (
+        <div className="flex justify-end">
           <button
             onClick={onAddDocenteClick}
             disabled={disableAddDocente}
@@ -64,8 +67,8 @@ export default function Header({
           >
             + Agregar usuario
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

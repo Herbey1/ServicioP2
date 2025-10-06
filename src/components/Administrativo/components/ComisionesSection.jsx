@@ -2,6 +2,7 @@ import React from "react";
 import SkeletonList from "../../common/SkeletonList";
 import TabSelector from "../../Docente/components/TabSelector";
 import SolicitudCard from "./SolicitudCard";
+import { useTheme } from "../../../context/ThemeContext";
 
 export default function ComisionesSection({ 
   activeTab, 
@@ -12,6 +13,8 @@ export default function ComisionesSection({
   counts = {},
   handleReviewClick 
 }) {
+  const { darkMode } = useTheme();
+
   return (
     <>
       {/* TabSelector Component */}
@@ -36,7 +39,7 @@ export default function ComisionesSection({
             />
           ))
         ) : (
-          <div className="text-center py-10 text-gray-500">
+          <div className={`text-center py-10 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             No hay solicitudes {activeTab.toLowerCase()}
           </div>
         )}
@@ -44,7 +47,10 @@ export default function ComisionesSection({
         {/* Espacios vacíos solo si no hay suficientes solicitudes reales */}
         {solicitudesActivas.length === 0 && (
           [...Array(2)].map((_, i) => (
-            <div key={i} className="bg-gray-100 rounded-xl px-4 py-6 h-[60px]" />
+            <div
+              key={i}
+              className={`${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100'} rounded-xl px-4 py-6 h-[60px]`}
+            />
           ))
         )}
       </div>

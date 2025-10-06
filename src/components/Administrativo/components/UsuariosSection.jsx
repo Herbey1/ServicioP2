@@ -9,7 +9,9 @@ export default function UsuariosSection({
   loading,
   onChangeRole,
   onToggleActive,
+  onDeleteUser,
   busyUserId,
+  deletingUserId,
   onAddUser,
   addingUser = false
 }) {
@@ -60,6 +62,7 @@ export default function UsuariosSection({
               {usuarios.map((user) => {
                 const isActive = !user.deleted_at
                 const isBusy = busyUserId === user.id
+                const isDeleting = deletingUserId === user.id
                 return (
                   <tr key={user.id} className={darkMode ? 'border-b border-gray-700' : 'border-b border-gray-100'}>
                     <td className="px-4 py-3 align-middle">{user.nombre}</td>
@@ -91,7 +94,7 @@ export default function UsuariosSection({
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => onToggleActive(user.id, !isActive)}
-                          disabled={isBusy}
+                          disabled={isBusy || isDeleting}
                           className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
                             isActive
                               ? 'border border-red-600 text-red-600 hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed'
@@ -99,6 +102,13 @@ export default function UsuariosSection({
                           }`}
                         >
                           {isActive ? 'Suspender' : 'Reactivar'}
+                        </button>
+                        <button
+                          onClick={() => onDeleteUser(user.id)}
+                          disabled={isDeleting || isBusy}
+                          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-red-700 text-red-700 hover:bg-red-100 disabled:opacity-60 disabled:cursor-not-allowed`}
+                        >
+                          {isDeleting ? 'Eliminando…' : 'Eliminar'}
                         </button>
                       </div>
                     </td>
@@ -129,7 +139,9 @@ UsuariosSection.propTypes = {
   loading: PropTypes.bool,
   onChangeRole: PropTypes.func.isRequired,
   onToggleActive: PropTypes.func.isRequired,
+  onDeleteUser: PropTypes.func.isRequired,
   busyUserId: PropTypes.string,
+  deletingUserId: PropTypes.string,
   onAddUser: PropTypes.func,
   addingUser: PropTypes.bool
 }

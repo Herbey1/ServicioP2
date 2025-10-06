@@ -33,6 +33,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   const [usuarios, setUsuarios] = useState([])
   const [loadingUsuarios, setLoadingUsuarios] = useState(false)
   const [userActionId, setUserActionId] = useState(null)
+  const [deletingUserId, setDeletingUserId] = useState(null)
 
   /* ------------- COMISIONES ------------- */
   const [solicitudesPorTab, setSolicitudesPorTab] = useState({
@@ -85,7 +86,10 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     try {
       setLoadingUsuarios(true);
       const resp = await apiFetch('/api/usuarios');
-      setUsuarios(resp.items || []);
+      if (!resp.ok) {
+        throw new Error(resp.data?.msg || 'Error al obtener usuarios');
+      }
+      setUsuarios(resp.data?.items || []);
     } catch (e) {
       console.error('Error cargando usuarios', e);
       showToast('No se pudieron cargar los usuarios', { type: 'error' });
@@ -406,6 +410,24 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     }
   }
 
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('¿Seguro que deseas eliminar este usuario de forma permanente?')) return
+    setDeletingUserId(userId)
+    try {
+      const resp = await apiFetch(`/api/usuarios/${userId}/permanent`, { method: 'DELETE' })
+      if (!resp.ok) {
+        throw new Error(resp.data?.msg || 'No se pudo eliminar el usuario')
+      }
+      showToast('Usuario eliminado definitivamente', { type: 'success' })
+      await loadUsuarios()
+    } catch (e) {
+      console.error('Error eliminando usuario', e)
+      showToast(e?.message || 'No se pudo eliminar el usuario', { type: 'error' })
+    } finally {
+      setDeletingUserId(null)
+    }
+  }
+
   const closeAddDocente = () => {
     if (addingDocente) return
     setShowAddDocente(false)
@@ -483,7 +505,9 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         handleReviewReporte={handleReviewReporte}
         handleChangeUserRole={handleChangeUserRole}
         handleToggleUserActive={handleToggleUserActive}
+        handleDeleteUser={handleDeleteUser}
         userActionId={userActionId}
+        deletingUserId={deletingUserId}
       />
 
       <AddDocenteModal

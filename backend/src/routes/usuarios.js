@@ -145,5 +145,19 @@ export default function usuariosRouter(prisma) {
     }
   });
 
+  router.delete("/:id/permanent", async (req, res) => {
+    const { id } = req.params;
+    try {
+      await prisma.usuarios.delete({ where: { id } });
+      res.json({ ok: true });
+    } catch (error) {
+      if (error?.code === "P2025") {
+        return res.status(404).json({ ok: false, msg: "Usuario no encontrado" });
+      }
+      console.error("[USUARIOS] Error eliminando usuario", error);
+      res.status(500).json({ ok: false, msg: "No se pudo eliminar el usuario" });
+    }
+  });
+
   return router;
 }
