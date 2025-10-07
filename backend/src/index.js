@@ -9,6 +9,7 @@ import solicitudesRouter from "./routes/solicitudes.js";
 import reportesRouter from "./routes/reportes.js";
 import { requireAuth, requireRole } from "./middleware/auth.js";
 import usuariosRouter from "./routes/usuarios.js";
+import perfilRouter from "./routes/perfil.js";
 
 dotenv.config();
 const app = express();
@@ -49,6 +50,9 @@ app.use("/api/solicitudes", requireAuth, solicitudesRouter(prisma));
 
 // Reportes (todas requieren login)
 app.use("/api/reportes", requireAuth, reportesRouter(prisma));
+
+// Perfil personal (login requerido)
+app.use("/api/perfil", requireAuth, perfilRouter(prisma));
 
 // Gestión de usuarios (solo ADMIN)
 app.use(

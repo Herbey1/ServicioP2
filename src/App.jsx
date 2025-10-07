@@ -5,6 +5,8 @@ import { useState, useEffect } from "react"
 import LoginPage from './components/Login/LoginPage';
 import SolicitudesInterface from './components/Docente/dashboard';
 import AdminDashboard from './components/Administrativo/dashboard';
+import ContactPage from './pages/ContactPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import ToastContainer from './components/common/ToastContainer';
@@ -30,6 +32,8 @@ function App() {  // Inicializar el estado de autenticación y el rol desde loca
           <Route path="/login" element={
             isAuthenticated ? <Navigate to={userRole === 'docente' ? "/dashboard" : "/admin"} /> : <LoginPage setIsAuthenticated={setIsAuthenticated} setUserRole={setUserRole} />
           } />
+          <Route path="/contacto" element={<ContactPage />} />
+          <Route path="/recuperar" element={<ForgotPasswordPage />} />
           <Route
             path="/dashboard"
             element={

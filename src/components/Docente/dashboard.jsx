@@ -17,7 +17,7 @@ import ReportCard          from "./components/ReportCard"
 /* Modales ─ Comisiones */
 import CreateSolicitudModal from "./components/CreateSolicitudModal"
 import EditSolicitudModal   from "./components/EditSolicitudModal"
-import DeleteConfirmModal   from "./components/DeleteConfirmModal"
+import DeleteConfirmModal   from "../common/DeleteConfirmModal"
 
 /* Modales ─ Reportes */
 import CreateReporteModal   from "./components/CreateReporteModal"
@@ -582,9 +582,14 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       )}
 
       <DeleteConfirmModal
-        showDeleteConfirm={showDeleteConfirm}
-        cancelDelete={() => setShowDeleteConfirm(false)}
-        confirmDelete={confirmDeleteSolicitud}
+        show={showDeleteConfirm}
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDeleteSolicitud}
+        title="Eliminar solicitud"
+        message="¿Estás seguro de que deseas eliminar esta solicitud? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        type="danger"
       />
 
       {/* ────────── Modales REPORTES ────────── */}

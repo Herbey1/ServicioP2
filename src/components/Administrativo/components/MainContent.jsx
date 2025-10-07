@@ -29,6 +29,7 @@ export default function MainContent({
   handleChangeUserRole,
   handleToggleUserActive,
   handleDeleteUser,
+  handleViewUserProfile,
   userActionId,
   deletingUserId
 }) {  const { darkMode } = useTheme();
@@ -86,6 +87,7 @@ export default function MainContent({
           onChangeRole={handleChangeUserRole}
           onToggleActive={handleToggleUserActive}
           onDeleteUser={handleDeleteUser}
+          onViewProfile={handleViewUserProfile}
           busyUserId={userActionId}
           deletingUserId={deletingUserId}
           onAddUser={onAddDocenteClick}

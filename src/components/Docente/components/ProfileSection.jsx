@@ -1,64 +1,174 @@
 "use client"
 
-import { useState } from "react"
-import EditProfileModal from "./EditProfileModal"
-import { useTheme } from "../../../context/ThemeContext"
-import DarkModeToggle from "../../common/DarkModeToggle"
+import { useEffect, useMemo, useState } from "react";
+import EditProfileModal from "./EditProfileModal";
+import { useTheme } from "../../../context/ThemeContext";
+import DarkModeToggle from "../../common/DarkModeToggle";
+import { apiFetch } from "../../../api/client";
+import { useToast } from "../../../context/ToastContext";
+
+const PROFILE_FIELDS = [
+  { key: "nombre", label: "Nombre completo", editable: true },
+  { key: "correo", label: "Correo institucional", editable: false },
+  {
+    key: "rol",
+    label: "Rol",
+    editable: false,
+    transform: (value) => (value === "ADMIN" ? "Administrativo" : "Docente"),
+  },
+  { key: "telefono", label: "Teléfono", editable: true },
+  { key: "departamento", label: "Departamento / Programa", editable: true },
+  { key: "categoria", label: "Categoría", editable: true },
+];
+
+const FALLBACK_PROFILE = {
+  nombre: "—",
+  correo: "—",
+  rol: "DOCENTE",
+  telefono: "",
+  departamento: "",
+  categoria: "",
+};
 
 export default function ProfileSection() {
   const { darkMode } = useTheme();
-  /* ——— datos de ejemplo; aquí conectarás con tu API ——— */
-  const [profile, setProfile] = useState({
-    nombre     : "Fernando Huerta",
-    correo     : "fernando.huerta@uabc.edu.mx",
-    departamento: "Ingeniería en Computación",
-    categoria  : "Docente", // Valor predeterminado para el perfil docente
-    telefono   : "(646) 123-4567"
-  })
+  const { showToast } = useToast();
+  const [profile, setProfile] = useState(FALLBACK_PROFILE);
+  const [loading, setLoading] = useState(true);
+  const [showEdit, setShowEdit] = useState(false);
 
-  const [showEdit, setShowEdit] = useState(false)
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      const resp = await apiFetch("/api/perfil");
+      if (!resp.ok) {
+        throw new Error(resp.data?.msg || "No se pudo obtener el perfil");
+      }
+      const next = resp.profile ?? resp.data?.profile ?? FALLBACK_PROFILE;
+      setProfile({
+        ...FALLBACK_PROFILE,
+        ...next,
+      });
+    } catch (error) {
+      console.error("[Perfil] Error cargando perfil", error);
+      showToast(error.message || "No se pudo obtener el perfil", { type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const displayFields = useMemo(() => PROFILE_FIELDS, []);
+
+  const handleSaveProfile = async (draft) => {
+    try {
+      const payload = {
+        nombre: draft.nombre ?? "",
+        telefono: draft.telefono ?? "",
+        departamento: draft.departamento ?? "",
+        categoria: draft.categoria ?? "",
+      };
+      const resp = await apiFetch("/api/perfil", { method: "PUT", body: payload });
+      if (!resp.ok) {
+        showToast(resp.data?.msg || "No se pudo actualizar el perfil", { type: "error" });
+        return false;
+      }
+      const next = resp.profile ?? resp.data?.profile ?? payload;
+      setProfile((prev) => ({ ...prev, ...next }));
+      showToast("Perfil actualizado", { type: "success" });
+      setShowEdit(false);
+      return true;
+    } catch (error) {
+      console.error("[Perfil] Error guardando perfil", error);
+      showToast("No se pudo actualizar el perfil", { type: "error" });
+      return false;
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Tarjeta de información */}
-      <div className={`rounded-xl shadow p-8 w-full max-w-3xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-        <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Mi perfil</h2>
-
-        <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {Object.entries(profile).map(([label, value]) => (
-            <div key={label}>
-              <dt className={`text-sm font-medium capitalize ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                {label === "categoria" ? "Categoría" : label === "departamento" ? "Programa educativo" : label}
-              </dt>
-              <dd className={`text-lg font-semibold break-all ${darkMode ? 'text-white' : 'text-gray-900'}`}>{value}</dd>
-            </div>
-          ))}
-        </dl>        <div className="mt-8 flex justify-end">
+      <div
+        className={`rounded-xl shadow p-8 w-full max-w-3xl ${
+          darkMode ? "bg-gray-800" : "bg-white"
+        }`}
+      >
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h2
+              className={`text-2xl font-bold ${
+                darkMode ? "text-white" : "text-gray-800"
+              }`}
+            >
+              Mi perfil
+            </h2>
+            <p className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
+              Administra tus datos de contacto y la información que comparte el sistema.
+            </p>
+          </div>
           <div className="flex items-center gap-4">
-            {/* DarkMode Toggle */}
-            <div className="flex items-center gap-2">
-              <DarkModeToggle />
-            </div>
-            
+            <DarkModeToggle />
             <button
               onClick={() => setShowEdit(true)}
-              className="px-5 py-2 bg-green-700 hover:bg-green-800 text-white rounded-full text-sm font-medium"
+              disabled={loading}
+              className={`px-5 py-2 rounded-full text-sm font-medium ${
+                loading
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-green-700 hover:bg-green-800 text-white transition-colors"
+              }`}
             >
               Editar perfil
             </button>
           </div>
         </div>
+
+        {loading ? (
+          <div className="animate-pulse space-y-4">
+            <div className={`h-6 rounded ${darkMode ? "bg-gray-700" : "bg-gray-200"}`} />
+            <div className={`h-6 rounded ${darkMode ? "bg-gray-700" : "bg-gray-200"}`} />
+            <div className={`h-6 rounded ${darkMode ? "bg-gray-700" : "bg-gray-200"}`} />
+            <div className={`h-6 rounded ${darkMode ? "bg-gray-700" : "bg-gray-200"}`} />
+          </div>
+        ) : (
+          <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {displayFields.map(({ key, label, transform }) => {
+              const rawValue = profile?.[key];
+              const value =
+                transform && rawValue !== undefined && rawValue !== null
+                  ? transform(rawValue)
+                  : rawValue;
+              return (
+                <div key={key}>
+                  <dt
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-500"
+                    }`}
+                  >
+                    {label}
+                  </dt>
+                  <dd
+                    className={`text-lg font-semibold break-words ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    {value ? value : "—"}
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+        )}
       </div>
 
-      {/* Modal edición */}
       <EditProfileModal
         open={showEdit}
         profile={profile}
         close={() => setShowEdit(false)}
-        save={(updated) => {
-          setProfile(updated)
-          setShowEdit(false)
-        }}
+        save={handleSaveProfile}
+        fields={displayFields}
       />
     </div>
-  )
+  );
 }

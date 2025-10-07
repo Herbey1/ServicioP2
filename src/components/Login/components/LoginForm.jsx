@@ -1,12 +1,12 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
-export default function LoginForm({ 
-  email, 
-  setEmail, 
-  password, 
-  setPassword, 
+export default function LoginForm({
+  email,
+  setEmail,
+  password,
+  setPassword,
   handleSubmit,
-  errorMessage 
 }) {
   const canSubmit = email.trim().length > 0 && password.trim().length > 0;
 
@@ -38,15 +38,11 @@ export default function LoginForm({
           placeholder="Ingresa tu contraseña"
         />
         <div className="text-right mt-1">
-          <a href="#" className="text-gray-500 text-sm">¿Olvidaste tu contraseña?</a>
+          <Link to="/recuperar" className="text-gray-500 text-sm hover:text-green-700">
+            ¿Olvidaste tu contraseña?
+          </Link>
         </div>
       </div>
-
-      {errorMessage && (
-        <div className="text-red-600 text-sm mt-2" role="alert">
-          {errorMessage}
-        </div>
-      )}
 
       <button
         type="submit"

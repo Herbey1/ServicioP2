@@ -9,6 +9,8 @@ import { useToast } from "../../context/ToastContext"
 /* ── Componentes compartidos ─ */
 import Sidebar            from "../Docente/components/Sidebar"
 import LogoutConfirmModal from "../Docente/components/LogoutConfirmModal"
+import DeleteConfirmModal from "../common/DeleteConfirmModal"
+import ProfileDetailsModal from "../common/ProfileDetailsModal"
 
 /* ── Componentes propios ──── */
 import MainContent          from "./components/MainContent"
@@ -34,6 +36,8 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   const [loadingUsuarios, setLoadingUsuarios] = useState(false)
   const [userActionId, setUserActionId] = useState(null)
   const [deletingUserId, setDeletingUserId] = useState(null)
+  const [deleteModalUser, setDeleteModalUser] = useState(null)
+  const [viewUserProfile, setViewUserProfile] = useState(null)
 
   /* ------------- COMISIONES ------------- */
   const [solicitudesPorTab, setSolicitudesPorTab] = useState({
@@ -335,12 +339,15 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     }
   }
   
-  const handleAddDocente = async ({ nombre, correo, rol, password }) => {
+  const handleAddDocente = async ({ nombre, correo, rol, password, telefono, departamento, categoria }) => {
     const payload = {
       nombre: (nombre || '').trim(),
       correo: (correo || '').trim(),
       rol,
-      password: password?.trim()
+      password: password?.trim(),
+      telefono: (telefono || '').trim(),
+      departamento: (departamento || '').trim(),
+      categoria: (categoria || '').trim()
     }
     if (!payload.nombre || !payload.correo || !payload.password) return
 
@@ -410,21 +417,34 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     }
   }
 
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este usuario de forma permanente?')) return
-    setDeletingUserId(userId)
+  const confirmPermanentDelete = (user) => {
+    if (deletingUserId) return
+    setDeleteModalUser(user)
+  }
+
+  const openProfileView = (user) => {
+    setViewUserProfile(user)
+  }
+
+  const closeProfileView = () => setViewUserProfile(null)
+
+  const handleDeleteUser = async () => {
+    if (!deleteModalUser) return
+    const { id, nombre } = deleteModalUser
+    setDeletingUserId(id)
     try {
-      const resp = await apiFetch(`/api/usuarios/${userId}/permanent`, { method: 'DELETE' })
+      const resp = await apiFetch(`/api/usuarios/${id}/permanent`, { method: 'DELETE' })
       if (!resp.ok) {
         throw new Error(resp.data?.msg || 'No se pudo eliminar el usuario')
       }
-      showToast('Usuario eliminado definitivamente', { type: 'success' })
+      showToast(`Se eliminó definitivamente a ${nombre}`, { type: 'success' })
       await loadUsuarios()
     } catch (e) {
       console.error('Error eliminando usuario', e)
       showToast(e?.message || 'No se pudo eliminar el usuario', { type: 'error' })
     } finally {
       setDeletingUserId(null)
+      setDeleteModalUser(null)
     }
   }
 
@@ -505,7 +525,14 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         handleReviewReporte={handleReviewReporte}
         handleChangeUserRole={handleChangeUserRole}
         handleToggleUserActive={handleToggleUserActive}
-        handleDeleteUser={handleDeleteUser}
+        handleDeleteUser={(userId) => {
+          const user = usuarios.find((u) => u.id === userId)
+          if (user) confirmPermanentDelete(user)
+        }}
+        handleViewUserProfile={(userId) => {
+          const user = usuarios.find((u) => u.id === userId)
+          if (user) openProfileView(user)
+        }}
         userActionId={userActionId}
         deletingUserId={deletingUserId}
       />
@@ -558,6 +585,26 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         showLogoutConfirm={showLogout}
         cancelLogout={hideLogoutModal}
         handleLogout={handleLogout}
+      />
+      <DeleteConfirmModal
+        show={Boolean(deleteModalUser)}
+        onCancel={() => setDeleteModalUser(null)}
+        onConfirm={handleDeleteUser}
+        title="Eliminar usuario"
+        message={
+          deleteModalUser
+            ? `Esta acción eliminará definitivamente a ${deleteModalUser.nombre}. ¿Deseas continuar?`
+            : "Esta acción eliminará el usuario seleccionado."
+        }
+        confirmLabel={deletingUserId ? "Eliminando…" : "Eliminar"}
+        cancelLabel="Cancelar"
+        confirmDisabled={Boolean(deletingUserId)}
+        type="danger"
+      />
+      <ProfileDetailsModal
+        open={Boolean(viewUserProfile)}
+        onClose={closeProfileView}
+        profile={viewUserProfile}
       />
     </div>
   )

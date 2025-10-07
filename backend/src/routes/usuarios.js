@@ -20,6 +20,9 @@ function sanitizeUser(user) {
     nombre: user.nombre,
     correo: user.correo,
     rol: user.rol,
+    telefono: user.telefono,
+    departamento: user.departamento,
+    categoria: user.categoria,
     verificado: user.verificado,
     deleted_at: user.deleted_at,
     created_at: user.created_at
@@ -28,6 +31,11 @@ function sanitizeUser(user) {
 
 export default function usuariosRouter(prisma) {
   const router = express.Router();
+
+  const MAX_NAME = 120;
+  const MAX_PHONE = 40;
+  const MAX_DEPT = 180;
+  const MAX_CATEGORIA = 120;
 
   router.get("/", async (_req, res) => {
     try {
@@ -38,6 +46,9 @@ export default function usuariosRouter(prisma) {
           nombre: true,
           correo: true,
           rol: true,
+          telefono: true,
+          departamento: true,
+          categoria: true,
           verificado: true,
           deleted_at: true,
           created_at: true
@@ -51,23 +62,56 @@ export default function usuariosRouter(prisma) {
   });
 
   router.post("/", async (req, res) => {
-    const { nombre, correo, password, rol } = req.body ?? {};
+    const {
+      nombre,
+      correo,
+      password,
+      rol,
+      telefono,
+      departamento,
+      categoria
+    } = req.body ?? {};
     const normalizedRole = normalizeRole(rol) ?? "DOCENTE";
 
     if (!nombre || !correo || !password) {
       return res.status(400).json({ ok: false, msg: "Nombre, correo y contraseña son requeridos" });
     }
 
+    const trimmedNombre = nombre.trim();
+    const trimmedCorreo = correo.trim().toLowerCase();
+    const trimmedTelefono = typeof telefono === "string" ? telefono.trim() : "";
+    const trimmedDepartamento = typeof departamento === "string" ? departamento.trim() : "";
+    const trimmedCategoria = typeof categoria === "string" ? categoria.trim() : "";
+
+    if (!trimmedNombre) {
+      return res.status(400).json({ ok: false, msg: "El nombre no puede estar vacío" });
+    }
+    if (trimmedNombre.length > MAX_NAME) {
+      return res.status(400).json({ ok: false, msg: `El nombre supera ${MAX_NAME} caracteres` });
+    }
+    if (trimmedTelefono.length > MAX_PHONE) {
+      return res.status(400).json({ ok: false, msg: `El teléfono supera ${MAX_PHONE} caracteres` });
+    }
+    if (trimmedDepartamento.length > MAX_DEPT) {
+      return res.status(400).json({ ok: false, msg: `El departamento supera ${MAX_DEPT} caracteres` });
+    }
+    if (trimmedCategoria.length > MAX_CATEGORIA) {
+      return res.status(400).json({ ok: false, msg: `La categoría supera ${MAX_CATEGORIA} caracteres` });
+    }
+
     try {
       const hash = await bcrypt.hash(password, 12);
       const user = await prisma.usuarios.create({
         data: {
-          nombre: nombre.trim(),
-          correo: correo.trim().toLowerCase(),
+          nombre: trimmedNombre,
+          correo: trimmedCorreo,
           contrasena_hash: hash,
           rol: normalizedRole,
           verificado: true,
-          deleted_at: null
+          deleted_at: null,
+          telefono: trimmedTelefono || null,
+          departamento: trimmedDepartamento || null,
+          categoria: trimmedCategoria || null
         }
       });
       res.status(201).json({ ok: true, user: sanitizeUser(user) });
@@ -82,14 +126,31 @@ export default function usuariosRouter(prisma) {
 
   router.patch("/:id", async (req, res) => {
     const { id } = req.params;
-    const { nombre, rol, activo, password } = req.body ?? {};
+    const { nombre, rol, activo, password, telefono, departamento, categoria } = req.body ?? {};
 
-    if (!nombre && !rol && typeof activo !== "boolean" && !password) {
+    if (
+      nombre === undefined &&
+      rol === undefined &&
+      typeof activo !== "boolean" &&
+      password === undefined &&
+      telefono === undefined &&
+      departamento === undefined &&
+      categoria === undefined
+    ) {
       return res.status(400).json({ ok: false, msg: "No hay cambios para aplicar" });
     }
 
     const data = {};
-    if (nombre) data.nombre = nombre.trim();
+    if (nombre !== undefined) {
+      const trimmedNombre = typeof nombre === "string" ? nombre.trim() : "";
+      if (!trimmedNombre) {
+        return res.status(400).json({ ok: false, msg: "El nombre no puede estar vacío" });
+      }
+      if (trimmedNombre.length > MAX_NAME) {
+        return res.status(400).json({ ok: false, msg: `El nombre supera ${MAX_NAME} caracteres` });
+      }
+      data.nombre = trimmedNombre;
+    }
     if (rol) {
       const normalizedRole = normalizeRole(rol);
       if (!normalizedRole) {
@@ -103,6 +164,27 @@ export default function usuariosRouter(prisma) {
     if (password) {
       data.contrasena_hash = await bcrypt.hash(password, 12);
     }
+    if (telefono !== undefined) {
+      const trimmedTelefono = typeof telefono === "string" ? telefono.trim() : "";
+      if (trimmedTelefono.length > MAX_PHONE) {
+        return res.status(400).json({ ok: false, msg: `El teléfono supera ${MAX_PHONE} caracteres` });
+      }
+      data.telefono = trimmedTelefono || null;
+    }
+    if (departamento !== undefined) {
+      const trimmedDepartamento = typeof departamento === "string" ? departamento.trim() : "";
+      if (trimmedDepartamento.length > MAX_DEPT) {
+        return res.status(400).json({ ok: false, msg: `El departamento supera ${MAX_DEPT} caracteres` });
+      }
+      data.departamento = trimmedDepartamento || null;
+    }
+    if (categoria !== undefined) {
+      const trimmedCategoria = typeof categoria === "string" ? categoria.trim() : "";
+      if (trimmedCategoria.length > MAX_CATEGORIA) {
+        return res.status(400).json({ ok: false, msg: `La categoría supera ${MAX_CATEGORIA} caracteres` });
+      }
+      data.categoria = trimmedCategoria || null;
+    }
 
     try {
       const updated = await prisma.usuarios.update({
@@ -113,6 +195,9 @@ export default function usuariosRouter(prisma) {
           nombre: true,
           correo: true,
           rol: true,
+          telefono: true,
+          departamento: true,
+          categoria: true,
           verificado: true,
           deleted_at: true,
           created_at: true

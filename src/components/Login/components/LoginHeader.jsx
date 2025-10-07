@@ -12,8 +12,7 @@ export default function LoginHeader() {
         Sistema de Gestión de Comisiones Académicas
       </h1>
 
-      <h2 className="text-xl font-semibold text-center mb-2">Iniciar sesión</h2>
-      <p className="text-center text-gray-600 mb-4">Selecciona tu tipo de usuario:</p>
+      <h2 className="text-xl font-semibold text-center mb-4">Iniciar sesión</h2>
     </>
   );
 }

@@ -10,6 +10,7 @@ export default function UsuariosSection({
   onChangeRole,
   onToggleActive,
   onDeleteUser,
+  onViewProfile,
   busyUserId,
   deletingUserId,
   onAddUser,
@@ -65,7 +66,15 @@ export default function UsuariosSection({
                 const isDeleting = deletingUserId === user.id
                 return (
                   <tr key={user.id} className={darkMode ? 'border-b border-gray-700' : 'border-b border-gray-100'}>
-                    <td className="px-4 py-3 align-middle">{user.nombre}</td>
+                    <td className="px-4 py-3 align-middle">
+                      <button
+                        type="button"
+                        onClick={() => onViewProfile?.(user.id)}
+                        className="text-left text-green-700 hover:text-green-800 font-semibold transition-colors underline-offset-2 hover:underline"
+                      >
+                        {user.nombre}
+                      </button>
+                    </td>
                     <td className="px-4 py-3 align-middle">{user.correo}</td>
                     <td className="px-4 py-3 align-middle">
                       <select
@@ -129,6 +138,9 @@ UsuariosSection.propTypes = {
     nombre: PropTypes.string.isRequired,
     correo: PropTypes.string.isRequired,
     rol: PropTypes.string.isRequired,
+    telefono: PropTypes.string,
+    departamento: PropTypes.string,
+    categoria: PropTypes.string,
     deleted_at: PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.instanceOf(Date),
@@ -140,6 +152,7 @@ UsuariosSection.propTypes = {
   onChangeRole: PropTypes.func.isRequired,
   onToggleActive: PropTypes.func.isRequired,
   onDeleteUser: PropTypes.func.isRequired,
+  onViewProfile: PropTypes.func,
   busyUserId: PropTypes.string,
   deletingUserId: PropTypes.string,
   onAddUser: PropTypes.func,
