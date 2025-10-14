@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import express from "express";
+import { requireAuth } from "../middleware/auth.js";
 
 export default function authRouter(prisma) {
   const router = express.Router();
@@ -66,6 +67,40 @@ export default function authRouter(prisma) {
       token,
       user: { id: user.id, nombre: user.nombre, correo: user.correo, rol: user.rol }
     });
+  });
+
+  // POST /api/auth/change-password (requiere login)
+  router.post("/change-password", requireAuth, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body ?? {};
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ ok: false, msg: "Contraseña actual y nueva son requeridas" });
+      }
+      if (String(newPassword).trim().length < 8) {
+        return res.status(400).json({ ok: false, msg: "La nueva contraseña debe tener al menos 8 caracteres" });
+      }
+      if (String(currentPassword) === String(newPassword)) {
+        return res.status(400).json({ ok: false, msg: "La nueva contraseña no puede ser igual a la actual" });
+      }
+
+      const user = await prisma.usuarios.findUnique({ where: { id: req.user.sub } });
+      if (!user || user.deleted_at) {
+        return res.status(404).json({ ok: false, msg: "Usuario no encontrado" });
+      }
+
+      const ok = await bcrypt.compare(currentPassword, user.contrasena_hash);
+      if (!ok) {
+        return res.status(401).json({ ok: false, msg: "La contraseña actual es incorrecta" });
+      }
+
+      const hash = await bcrypt.hash(String(newPassword), 12);
+      await prisma.usuarios.update({ where: { id: user.id }, data: { contrasena_hash: hash, updated_at: new Date() } });
+
+      return res.json({ ok: true });
+    } catch (error) {
+      console.error("[AUTH] Error al cambiar contraseña", error);
+      return res.status(500).json({ ok: false, msg: "No se pudo cambiar la contraseña" });
+    }
   });
 
   return router;

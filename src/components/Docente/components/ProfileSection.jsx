@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import EditProfileModal from "./EditProfileModal"
+import ChangePasswordModal from "./ChangePasswordModal"
 import { useTheme } from "../../../context/ThemeContext"
 import DarkModeToggle from "../../common/DarkModeToggle"
 
@@ -17,6 +18,7 @@ export default function ProfileSection() {
   })
 
   const [showEdit, setShowEdit] = useState(false)
+  const [showPwd, setShowPwd] = useState(false)
   return (
     <div className="flex flex-col gap-6">
       {/* Tarjeta de información */}
@@ -51,6 +53,12 @@ export default function ProfileSection() {
             >
               Editar perfil
             </button>
+            <button
+              onClick={() => setShowPwd(true)}
+              className="px-5 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-full text-sm font-medium"
+            >
+              Cambiar contraseña
+            </button>
           </div>
         </div>
       </div>
@@ -64,6 +72,11 @@ export default function ProfileSection() {
           setProfile(updated)
           setShowEdit(false)
         }}
+      />
+
+      <ChangePasswordModal
+        open={showPwd}
+        close={() => setShowPwd(false)}
       />
     </div>
   )
