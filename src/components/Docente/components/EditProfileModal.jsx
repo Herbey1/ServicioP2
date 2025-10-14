@@ -37,7 +37,14 @@ export default function EditProfileModal({ open, close, profile, save }) {
         <div className="grid grid-cols-1 gap-4">
           {Object.entries(formData).map(([label, value]) => {
             const isTelefono = label === "telefono";
-            const shownLabel = label === "categoria" ? "Categoría" : label === "departamento" ? "Programa educativo" : label;
+            const shownLabel =
+              label === "categoria"
+                ? "Categoría"
+                : label === "departamento"
+                  ? "Programa educativo"
+                  : label === "telefono"
+                    ? "Teléfono"
+                    : label;
 
             return (
               <div key={label}>
