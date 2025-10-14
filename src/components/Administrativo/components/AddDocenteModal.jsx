@@ -29,16 +29,16 @@ export default function AddDocenteModal({ isOpen, onClose, onSubmit, submitting 
   const validation = useMemo(() => {
     const trimmedName = nombre.trim()
     const trimmedEmail = correo.trim()
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const emailRegex = /^[A-Z0-9._%+-]+@uabc\.edu\.mx$/i
     const trimmedPassword = password.trim()
 
     return {
       nombre: !trimmedName ? "Ingrese el nombre del usuario" : null,
       correo: !trimmedEmail
-        ? "Ingrese el correo electrónico"
+        ? "Ingrese el correo electrónico institucional"
         : emailRegex.test(trimmedEmail)
           ? null
-          : "Ingrese un correo electrónico válido",
+          : "El correo debe ser @uabc.edu.mx",
       password:
         trimmedPassword.length < 8
           ? "La contraseña debe tener al menos 8 caracteres"
@@ -162,7 +162,8 @@ export default function AddDocenteModal({ isOpen, onClose, onSubmit, submitting 
               onChange={(event) => setCorreo(event.target.value)}
               onBlur={() => setCorreoTouched(true)}
               className={inputClasses}
-              placeholder="Ej. maria.perez@universidad.mx"
+              placeholder="Ej. maria.perez@uabc.edu.mx"
+              pattern="^[^\s@]+@uabc\.edu\.mx$"
               disabled={submitting}
             />
             {correoTouched && validation.correo && (

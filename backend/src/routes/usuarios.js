@@ -58,12 +58,18 @@ export default function usuariosRouter(prisma) {
       return res.status(400).json({ ok: false, msg: "Nombre, correo y contraseña son requeridos" });
     }
 
+    const email = String(correo).trim().toLowerCase();
+    const allowed = /^[a-z0-9._%+-]+@uabc\.edu\.mx$/i.test(email);
+    if (!allowed) {
+      return res.status(400).json({ ok: false, msg: "El correo debe ser institucional (@uabc.edu.mx)" });
+    }
+
     try {
       const hash = await bcrypt.hash(password, 12);
       const user = await prisma.usuarios.create({
         data: {
           nombre: nombre.trim(),
-          correo: correo.trim().toLowerCase(),
+          correo: email,
           contrasena_hash: hash,
           rol: normalizedRole,
           verificado: true,
