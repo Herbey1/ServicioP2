@@ -23,6 +23,20 @@ export default function MainContent({
   loadingReportes = false,
   loadingUsuarios = false,
   counts,
+  searchValue = "",
+  onSearchChange = () => {},
+  searchPlaceholder = "",
+  showSearch = false,
+  solicitudFilters = { desde: "", hasta: "" },
+  setSolicitudFilters = () => {},
+  reporteFilters = { desde: "", hasta: "" },
+  setReporteFilters = () => {},
+  clearSolicitudFilters = () => {},
+  clearReporteFilters = () => {},
+  solicitudFiltersApplied = false,
+  reporteFiltersApplied = false,
+  solicitudDateActive = false,
+  reporteDateActive = false,
   /* Callbacks de revisión */
   handleReviewSolicitud,
   handleReviewReporte,
@@ -31,7 +45,11 @@ export default function MainContent({
   handleDeleteUser,
   userActionId,
   deletingUserId
-}) {  const { darkMode } = useTheme();
+}) {
+  const { darkMode } = useTheme();
+  const filterLabelClass = `text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`;
+  const filterInputClass = `mt-1 w-full rounded-md border px-3 py-2 text-sm ${darkMode ? 'border-gray-600 bg-gray-800 text-white placeholder-gray-400' : 'border-gray-300 bg-white text-gray-700 placeholder-gray-500'}`;
+  const clearButtonClass = `px-3 py-2 rounded-full border text-sm font-medium transition-colors ${darkMode ? 'border-gray-600 text-gray-200 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`;
 
   return (
     <div
@@ -47,16 +65,85 @@ export default function MainContent({
         title="Panel de Administración"
         onAddDocenteClick={activeSection === "Usuarios" ? null : onAddDocenteClick}
         disableAddDocente={disableAddDocenteButton}
+        searchValue={searchValue}
+        onSearchChange={onSearchChange}
+        searchPlaceholder={searchPlaceholder}
+        showSearch={showSearch}
       />
 
-      {/* Título dinámico */}
-      <h2 className="text-2xl font-bold mb-6">
-        {activeSection === "Comisiones"
-          ? "Solicitudes de comisiones"
-          : activeSection === "Reportes"
-          ? "Reportes académicos"
-          : "Gestión de usuarios"}
-      </h2>
+      {activeSection === "Comisiones" && (
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-3 w-full">
+          <h2 className="text-2xl font-bold">
+            Solicitudes de comisiones
+          </h2>
+          <div className="flex items-end gap-4">
+            <div className="flex flex-col">
+              <label className={filterLabelClass}>Fecha desde</label>
+              <input
+                type="date"
+                value={solicitudFilters.desde}
+                onChange={(e) => setSolicitudFilters(prev => ({ ...prev, desde: e.target.value }))}
+                className={filterInputClass}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className={filterLabelClass}>Fecha hasta</label>
+              <input
+                type="date"
+                value={solicitudFilters.hasta}
+                onChange={(e) => setSolicitudFilters(prev => ({ ...prev, hasta: e.target.value }))}
+                className={filterInputClass}
+                min={solicitudFilters.desde || undefined}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={clearSolicitudFilters}
+              className={`${clearButtonClass} ${!solicitudDateActive ? 'opacity-60 cursor-not-allowed' : ''}`}
+              disabled={!solicitudDateActive}
+            >
+              Limpiar fechas
+            </button>
+          </div>
+        </div>
+      )}
+
+      {activeSection === "Reportes" && (
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-3 w-full">
+          <h2 className="text-2xl font-bold">
+            Reportes académicos
+          </h2>
+          <div className="flex items-end gap-4">
+            <div className="flex flex-col">
+              <label className={filterLabelClass}>Fecha desde</label>
+              <input
+                type="date"
+                value={reporteFilters.desde}
+                onChange={(e) => setReporteFilters(prev => ({ ...prev, desde: e.target.value }))}
+                className={filterInputClass}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className={filterLabelClass}>Fecha hasta</label>
+              <input
+                type="date"
+                value={reporteFilters.hasta}
+                onChange={(e) => setReporteFilters(prev => ({ ...prev, hasta: e.target.value }))}
+                className={filterInputClass}
+                min={reporteFilters.desde || undefined}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={clearReporteFilters}
+              className={`${clearButtonClass} ${!reporteDateActive ? 'opacity-60 cursor-not-allowed' : ''}`}
+              disabled={!reporteDateActive}
+            >
+              Limpiar fechas
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Contenido según sección */}
       {activeSection === "Comisiones" ? (
@@ -68,6 +155,7 @@ export default function MainContent({
           loading={loadingSolicitudes}
           counts={counts}
           handleReviewClick={handleReviewSolicitud}
+          filtersApplied={solicitudFiltersApplied}
         />
       ) : activeSection === "Reportes" ? (
         <ReportesSection
@@ -78,6 +166,7 @@ export default function MainContent({
           loading={loadingReportes}
           counts={counts}
           handleReviewClick={handleReviewReporte}
+          filtersApplied={reporteFiltersApplied}
         />
       ) : (
         <UsuariosSection

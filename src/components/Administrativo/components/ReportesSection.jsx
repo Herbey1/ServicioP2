@@ -12,7 +12,8 @@ export default function ReportesSection({
   reportesActivos,
   loading = false,
   counts = {},
-  handleReviewClick
+  handleReviewClick,
+  filtersApplied = false
 }) {
   const { darkMode } = useTheme();
 
@@ -40,7 +41,9 @@ export default function ReportesSection({
           ))
         ) : (
           <div className={`text-center py-10 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            No hay reportes {activeTab.toLowerCase()}
+            {filtersApplied
+              ? `No hay reportes ${activeTab.toLowerCase()} que coincidan con la búsqueda o el rango de fechas.`
+              : `No hay reportes ${activeTab.toLowerCase()}.`}
           </div>
         )}
 

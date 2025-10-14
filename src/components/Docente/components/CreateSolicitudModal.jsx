@@ -1,5 +1,6 @@
 "use client"
 
+import { useId } from "react";
 import { useTheme } from "../../../context/ThemeContext";
 
 export default function CreateSolicitudModal({
@@ -22,6 +23,51 @@ export default function CreateSolicitudModal({
   const buttonSecondaryClass = `px-6 py-2 font-medium rounded-full ${darkMode ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`;
   const tipoOptions = Array.isArray(tiposParticipacion) ? tiposParticipacion : [];
   const programaOptions = Array.isArray(programasEducativos) ? programasEducativos : [];
+  const tipoParticipacionValue = newSolicitud.tipoParticipacionId ?? "";
+  const isOtroTipo = tipoParticipacionValue === "OTHER";
+  const archivosSeleccionados = Array.isArray(newSolicitud?.archivos) ? newSolicitud.archivos : [];
+  const fileInputId = useId();
+  const fileButtonClass = `inline-flex items-center justify-center border border-green-700 text-green-700 px-4 py-2 rounded-full text-sm font-medium bg-transparent hover:bg-green-700 hover:text-white transition-colors`;
+
+  const handleFileSelection = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    const valid = [];
+    const invalid = [];
+    files.forEach((file) => {
+      const mime = file.type?.toLowerCase() ?? "";
+      const name = file.name?.toLowerCase() ?? "";
+      const isPdf = mime === "application/pdf" || name.endsWith(".pdf");
+      const isJpg = mime === "image/jpeg" || name.endsWith(".jpg") || name.endsWith(".jpeg");
+      if (isPdf || isJpg) {
+        valid.push(file);
+      } else {
+        invalid.push(file.name);
+      }
+    });
+
+    if (invalid.length) {
+      alert(`Solo se permiten archivos PDF o JPG. Archivos omitidos: ${invalid.join(", ")}`);
+    }
+    if (valid.length) {
+      setNewSolicitud((prev) => ({
+        ...prev,
+        archivos: [...archivosSeleccionados, ...valid]
+      }));
+    }
+
+    event.target.value = "";
+  };
+
+  const handleRemoveArchivo = (index) => {
+    setNewSolicitud((prev) => {
+      const current = Array.isArray(prev.archivos) ? prev.archivos : [];
+      const next = [...current];
+      next.splice(index, 1);
+      return { ...prev, archivos: next };
+    });
+  };
 
   return (
     showCreateModal && (
@@ -76,18 +122,38 @@ export default function CreateSolicitudModal({
               </label>
               <select
                 className={inputClass}
-                value={newSolicitud.tipoParticipacionId ?? ""}
+                value={tipoParticipacionValue}
                 onChange={(e) => {
-                  const value = parseInt(e.target.value, 10);
-                  setNewSolicitud({ ...newSolicitud, tipoParticipacionId: Number.isNaN(value) ? null : value });
+                  const value = e.target.value;
+                  if (value === "OTHER") {
+                    setNewSolicitud({ ...newSolicitud, tipoParticipacionId: "OTHER" });
+                  } else {
+                    const parsed = parseInt(value, 10);
+                    setNewSolicitud({
+                      ...newSolicitud,
+                      tipoParticipacionId: Number.isNaN(parsed) ? "" : String(parsed),
+                      tipoParticipacionOtro: ""
+                    });
+                  }
                 }}
                 required
               >
                 <option value="">Selecciona una opción</option>
                 {tipoOptions.map(tipo => (
-                  <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
+                  <option key={tipo.id} value={String(tipo.id)}>{tipo.nombre}</option>
                 ))}
+                <option value="OTHER">Otros</option>
               </select>
+              {isOtroTipo && (
+                <input
+                  type="text"
+                  className={`${inputClass} mt-2`}
+                  value={newSolicitud.tipoParticipacionOtro ?? ""}
+                  onChange={(e) => setNewSolicitud({ ...newSolicitud, tipoParticipacionOtro: e.target.value })}
+                  placeholder="Especifica el tipo de participación"
+                  required
+                />
+              )}
             </div>
               {/* Ciudad y País */}
             <div>
@@ -311,6 +377,47 @@ export default function CreateSolicitudModal({
                   <span className={`ml-2 ${textClass}`}>No</span>
                 </label>
               </div>
+            </div>
+              {/* Archivos adjuntos */}
+            <div className="col-span-2">
+              <label className={labelClass}>
+                Documentación de apoyo (PDF o JPG):
+              </label>
+              <input
+                id={fileInputId}
+                type="file"
+                className="hidden"
+                accept=".pdf,image/jpeg"
+                multiple
+                onChange={handleFileSelection}
+              />
+              <label
+                htmlFor={fileInputId}
+                className={fileButtonClass}
+              >
+                Seleccionar archivo
+              </label>
+              {archivosSeleccionados.length > 0 && (
+                <ul className="mt-2 space-y-1 text-sm">
+                  {archivosSeleccionados.map((file, idx) => (
+                    <li key={`${file.name}-${idx}`} className="flex items-center justify-between gap-2">
+                      <span className={darkMode ? "text-gray-200" : "text-gray-700"}>
+                        {file.name} ({Math.round(file.size / 1024)} KB)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveArchivo(idx)}
+                        className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200"
+                      >
+                        Quitar
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Tamaño máximo 10 MB por archivo.
+              </p>
             </div>
               {/* Comentarios adicionales */}
             <div className="col-span-2">
