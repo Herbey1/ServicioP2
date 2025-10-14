@@ -17,11 +17,19 @@ export function ThemeProvider({ children }) {
     // Verificar si estamos en la página de login para no aplicar el tema oscuro
     const isLoginPage = window.location.pathname.includes('/login');
     
+    // Agregar clase para transición suave
+    document.documentElement.classList.add('theme-transitioning');
+    
     if (darkMode && !isLoginPage) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
+    
+    // Remover la clase de transición después de la animación
+    setTimeout(() => {
+      document.documentElement.classList.remove('theme-transitioning');
+    }, 300);
   }, [darkMode]);
   
   // Efecto adicional para detectar cambios de ruta y garantizar que el login siempre esté en modo claro

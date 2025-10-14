@@ -1,57 +1,133 @@
 import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { SunIcon, MoonIcon } from './Icons';
 
-export default function DarkModeToggle() {
+export default function DarkModeToggle({ 
+  size = 'md', 
+  showLabel = false, 
+  variant = 'toggle', // 'toggle' | 'button'
+  className = '' 
+}) {
   const { darkMode, toggleDarkMode } = useTheme();
+  
+  if (variant === 'button') {
+    const sizes = {
+      sm: 'p-1.5',
+      md: 'p-2',
+      lg: 'p-3'
+    };
+    
+    const iconSizes = {
+      sm: 'h-4 w-4',
+      md: 'h-5 w-5', 
+      lg: 'h-6 w-6'
+    };
 
-  return (
-    <div className="flex items-center">
-      {/* Ícono de sol para modo claro */}
-      <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        className={`h-5 w-5 mr-2 ${darkMode ? 'text-gray-400' : 'text-yellow-500'}`}
-        fill="none" 
-        viewBox="0 0 24 24" 
-        stroke="currentColor"
+    return (
+      <button
+        onClick={toggleDarkMode}
+        className={`
+          inline-flex items-center justify-center rounded-lg
+          transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
+          ${sizes[size]}
+          ${darkMode 
+            ? 'bg-gray-800 hover:bg-gray-700 text-yellow-400 focus:ring-yellow-500' 
+            : 'bg-gray-100 hover:bg-gray-200 text-gray-700 focus:ring-gray-500'
+          }
+          ${className}
+        `}
+        aria-label={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+        title={darkMode ? "Modo claro" : "Modo oscuro"}
       >
-        <path 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          strokeWidth={2} 
-          d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" 
-        />
-      </svg>
+        <div className="relative overflow-hidden">
+          {/* Sun Icon */}
+          <SunIcon 
+            className={`
+              ${iconSizes[size]} transition-all duration-300 transform
+              ${darkMode 
+                ? 'translate-y-6 opacity-0 rotate-180' 
+                : 'translate-y-0 opacity-100 rotate-0'
+              }
+            `}
+          />
+          
+          {/* Moon Icon */}
+          <MoonIcon 
+            className={`
+              ${iconSizes[size]} absolute inset-0 transition-all duration-300 transform
+              ${darkMode 
+                ? 'translate-y-0 opacity-100 rotate-0' 
+                : '-translate-y-6 opacity-0 -rotate-180'
+              }
+            `}
+          />
+        </div>
+        
+        {showLabel && (
+          <span className="ml-2 text-sm font-medium">
+            {darkMode ? 'Claro' : 'Oscuro'}
+          </span>
+        )}
+      </button>
+    );
+  }
+
+  // Toggle variant (original style improved)
+  return (
+    <div className={`flex items-center space-x-3 ${className}`}>
+      {/* Sun icon */}
+      <div className={`transition-all duration-200 ${darkMode ? 'text-gray-400' : 'text-yellow-500'}`}>
+        <SunIcon className="h-5 w-5" />
+      </div>
       
-      {/* Switch */}
-      <label className="inline-flex relative items-center cursor-pointer">
+      {/* Toggle Switch */}
+      <label className="relative inline-flex items-center cursor-pointer group">
         <input 
           type="checkbox"
           className="sr-only"
           checked={darkMode}
           onChange={toggleDarkMode}
+          aria-label={darkMode ? "Desactivar modo oscuro" : "Activar modo oscuro"}
         />
-        <div className={`w-11 h-6 bg-gray-200 rounded-full peer-focus:ring-4 peer-focus:ring-green-300 
-        ${darkMode ? 'after:translate-x-full after:border-white bg-green-700' : 'bg-gray-200'} 
-        after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 
-        after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer`}>
+        <div className={`
+          relative w-11 h-6 rounded-full transition-all duration-200 ease-in-out
+          focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500
+          ${darkMode 
+            ? 'bg-green-600 shadow-inner' 
+            : 'bg-gray-300 shadow-inner'
+          }
+        `}>
+          <div className={`
+            absolute top-0.5 left-0.5 bg-white rounded-full h-5 w-5 shadow-md
+            transition-all duration-200 ease-in-out transform
+            flex items-center justify-center
+            ${darkMode ? 'translate-x-5' : 'translate-x-0'}
+          `}>
+            {/* Mini icons inside the toggle */}
+            <div className="relative w-3 h-3 overflow-hidden">
+              <SunIcon className={`
+                absolute inset-0 w-3 h-3 text-yellow-500 transition-all duration-200 transform
+                ${darkMode ? 'opacity-0 rotate-180 scale-0' : 'opacity-100 rotate-0 scale-100'}
+              `} />
+              <MoonIcon className={`
+                absolute inset-0 w-3 h-3 text-gray-600 transition-all duration-200 transform
+                ${darkMode ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-180 scale-0'}
+              `} />
+            </div>
+          </div>
         </div>
       </label>
       
-      {/* Ícono de luna para modo oscuro */}
-      <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        className={`h-5 w-5 ml-2 ${darkMode ? 'text-blue-300' : 'text-gray-400'}`}
-        fill="none" 
-        viewBox="0 0 24 24" 
-        stroke="currentColor"
-      >
-        <path 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          strokeWidth={2} 
-          d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" 
-        />
-      </svg>
+      {/* Moon icon */}
+      <div className={`transition-all duration-200 ${darkMode ? 'text-blue-400' : 'text-gray-400'}`}>
+        <MoonIcon className="h-5 w-5" />
+      </div>
+      
+      {showLabel && (
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {darkMode ? 'Modo oscuro' : 'Modo claro'}
+        </span>
+      )}
     </div>
   );
 }

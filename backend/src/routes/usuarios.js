@@ -20,9 +20,9 @@ function sanitizeUser(user) {
     nombre: user.nombre,
     correo: user.correo,
     rol: user.rol,
-    telefono: user.telefono,
-    departamento: user.departamento,
-    categoria: user.categoria,
+    telefono: user.telefono || '',
+    departamento: user.departamento || '',
+    categoria: user.categoria || '',
     verificado: user.verificado,
     deleted_at: user.deleted_at,
     created_at: user.created_at
@@ -189,19 +189,7 @@ export default function usuariosRouter(prisma) {
     try {
       const updated = await prisma.usuarios.update({
         where: { id },
-        data,
-        select: {
-          id: true,
-          nombre: true,
-          correo: true,
-          rol: true,
-          telefono: true,
-          departamento: true,
-          categoria: true,
-          verificado: true,
-          deleted_at: true,
-          created_at: true
-        }
+        data
       });
       res.json({ ok: true, user: sanitizeUser(updated) });
     } catch (error) {

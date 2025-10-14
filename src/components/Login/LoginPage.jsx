@@ -81,19 +81,29 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
   };
 
   return (
-    <div className="flex h-screen w-full">
-      <LoginSidebar />
-      <div className="flex flex-1 items-center justify-center bg-gray-100">
-        <div className="w-full max-w-[450px] p-8">
-          <LoginHeader />
-          <UserTypeSelector userType={userType} setUserType={setUserType} />
-          <LoginForm
-            email={email}
-            setEmail={setEmail}
-            password={password}
-            setPassword={setPassword}
-            handleSubmit={handleSubmit}
-          />
+    <div className="full-page-container bg-gray-50 dark:bg-gray-900">
+      <div className="flex flex-1 min-h-screen w-full">
+        <LoginSidebar />
+        
+        <div className="flex flex-1 items-center justify-center p-2 lg:p-4 min-h-screen">
+          <div className="w-full max-w-sm no-overlap">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-4 border border-gray-200 dark:border-gray-700">
+              <LoginHeader />
+              <UserTypeSelector userType={userType} setUserType={setUserType} />
+              <LoginForm
+                email={email}
+                setEmail={setEmail}
+                password={password}
+                setPassword={setPassword}
+                handleSubmit={handleSubmit}
+              />
+            </div>
+            
+            {/* Footer */}
+            <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-2">
+              © 2025 UABC - FCQI. Todos los derechos reservados.
+            </p>
+          </div>
         </div>
       </div>
     </div>

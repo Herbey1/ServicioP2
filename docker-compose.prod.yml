@@ -1,0 +1,90 @@
+networks:
+  sgca_network:
+    driver: bridge
+
+services:
+  db:
+    image: postgres:15
+    networks:
+      - sgca_network
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - sgca_pgdata_prod:/var/lib/postgresql/data
+      - ./SGCA_DB/initdb:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # No expose ports in production for security
+    # ports:
+    #   - "${PGPORT}:5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: sgca_backend_prod
+    restart: unless-stopped
+    networks:
+      - sgca_network
+    env_file: .env.production
+    environment:
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/uploads:/app/uploads
+    # Internal port only
+    expose:
+      - "4000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.prod
+    container_name: sgca_frontend_prod
+    restart: unless-stopped
+    networks:
+      - sgca_network
+    env_file: .env.production
+    ports:
+      - "80:80"
+      - "443:443"  # For HTTPS if needed
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Optional: Remove pgadmin in production for security
+  # pgadmin:
+  #   image: dpage/pgadmin4:8
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8081:80"
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
+  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #   networks:
+  #     - sgca_network
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+
+volumes:
+  sgca_pgdata_prod:

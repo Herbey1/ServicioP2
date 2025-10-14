@@ -5,10 +5,12 @@ import ReportesSection   from "./ReportesSection"
 import UsuariosSection   from "./UsuariosSection"
 import Header            from "./Header"
 import { useTheme } from "../../../context/ThemeContext"
+import { Bars3Icon } from "../../common/Icons"
 
 export default function MainContent({
   /* Layout */
   sidebarOpen,
+  toggleSidebar,
   /* Sección / pestañas */
   activeSection, setActiveSection,
   activeTab,     setActiveTab,
@@ -32,13 +34,14 @@ export default function MainContent({
   handleViewUserProfile,
   userActionId,
   deletingUserId
-}) {  const { darkMode } = useTheme();
+}) {  
+  const { darkMode } = useTheme();
 
   return (
     <div
-      className={`flex-1 p-8 flex flex-col transition-all duration-300 ${
-        sidebarOpen ? "ml-64" : "ml-0"
-      } ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}
+      className={`flex-1 p-4 sm:p-6 lg:p-8 flex flex-col transition-all duration-300 safe-positioning
+                  ${sidebarOpen ? "ml-72" : "ml-0"} 
+                  ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}
     >
       {/* Header */}
       <Header
@@ -50,14 +53,28 @@ export default function MainContent({
         disableAddDocente={disableAddDocenteButton}
       />
 
-      {/* Título dinámico */}
-      <h2 className="text-2xl font-bold mb-6">
-        {activeSection === "Comisiones"
-          ? "Solicitudes de comisiones"
-          : activeSection === "Reportes"
-          ? "Reportes académicos"
-          : "Gestión de usuarios"}
-      </h2>
+      {/* Header con botón hamburguesa y título */}
+      <div className="flex items-center space-x-4 mb-6">
+        {/* Botón hamburguesa - solo visible cuando sidebar cerrado */}
+        {!sidebarOpen && (
+          <button
+            onClick={toggleSidebar}
+            className="bg-green-700 hover:bg-green-800 text-white 
+                     p-3 rounded-xl cursor-pointer shadow-lg transition-all duration-200
+                     focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            aria-label="Abrir menú de navegación"
+          >
+            <Bars3Icon className="h-6 w-6" />
+          </button>
+        )}
+        <h2 className="text-2xl font-bold">
+          {activeSection === "Comisiones"
+            ? "Solicitudes de comisiones"
+            : activeSection === "Reportes"
+            ? "Reportes académicos"
+            : "Gestión de usuarios"}
+        </h2>
+      </div>
 
       {/* Contenido según sección */}
       {activeSection === "Comisiones" ? (

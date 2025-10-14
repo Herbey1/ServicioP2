@@ -125,31 +125,49 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     }
   }
 
-  const approveRequest = async (tab, index, comments) => {
-    const sol = solicitudesPorTab[tab][index]
-    if (!await changeEstado(sol.id, 'APROBADA', comments)) return
-    await loadSolicitudes()
-    setActiveTabComisiones("Aprobadas")
+  const approveRequest = async (solicitudId, comments) => {
+    try {
+      const success = await changeEstado(solicitudId, 'APROBADA', comments)
+      if (!success) return
+      
+      showToast('Solicitud aprobada correctamente', { type: 'success' })
+      await loadSolicitudes()
+      setActiveTabComisiones("Aprobadas")
+      setModalSolicitud(null)
+    } catch (error) {
+      console.error('Error aprobando solicitud:', error)
+      showToast('Error al aprobar la solicitud', { type: 'error' })
+    }
   }
 
-  const rejectRequest = async (tab, index, comments) => {
-    const sol = solicitudesPorTab[tab][index]
-    if (!await changeEstado(sol.id, 'RECHAZADA', comments)) return
-    moveSolicitud(tab, "Rechazadas", index, {
-      status: "Rechazada",
-      comentariosAdmin: comments
-    })
-    setActiveTabComisiones("Rechazadas")
+  const rejectRequest = async (solicitudId, comments) => {
+    try {
+      const success = await changeEstado(solicitudId, 'RECHAZADA', comments)
+      if (!success) return
+      
+      showToast('Solicitud rechazada', { type: 'success' })
+      await loadSolicitudes()
+      setActiveTabComisiones("Rechazadas")
+      setModalSolicitud(null)
+    } catch (error) {
+      console.error('Error rechazando solicitud:', error)
+      showToast('Error al rechazar la solicitud', { type: 'error' })
+    }
   }
 
-  const returnRequest = async (tab, index, comments) => {
-    const sol = solicitudesPorTab[tab][index]
-    if (!await changeEstado(sol.id, 'DEVUELTA', comments)) return
-    moveSolicitud(tab, "Devueltas", index, {
-      status: "Devuelta",
-      comentariosAdmin: comments
-    })
-    setActiveTabComisiones("Devueltas")
+  const returnRequest = async (solicitudId, comments) => {
+    try {
+      const success = await changeEstado(solicitudId, 'DEVUELTA', comments)
+      if (!success) return
+      
+      showToast('Solicitud devuelta al docente para corrección', { type: 'success' })
+      await loadSolicitudes()
+      setActiveTabComisiones("Devueltas")
+      setModalSolicitud(null)
+    } catch (error) {
+      console.error('Error devolviendo solicitud:', error)
+      showToast('Error al devolver la solicitud', { type: 'error' })
+    }
   }
 
   /* ------------- REPORTES ------------- */
@@ -166,34 +184,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     async function loadReportes() {
       try {
         setLoadingReportes(true)
-        const resp = await apiFetch('/api/reportes'); 
-        const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
-
-        // Mapeo de estados de la base de datos a las pestañas de la UI
-        const estadoMap = {
-          EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-          APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-          RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' }, // Asegúrate que este estado exista en tu enum de reportes
-          DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
-        };
-        
-        (resp.items || []).forEach(item => {
-          // Asegúrate que 'item.estado' y 'item.usuarios.nombre' existan en la respuesta de tu API
-          const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
-          grouped[map.tab].push({
-            id: item.id,
-            titulo: item.asunto || "Reporte de Comisión", // Ajusta según el campo correcto
-            solicitante: item.usuarios?.nombre || item.docente_id,
-            fechaEntrega: item.fecha_entrega?.slice(0,10) || "N/A",
-            status: map.status,
-            descripcion: item.descripcion || "",
-            // resumen historial
-            ultimoCambioFecha: item.last_change_at ? new Date(item.last_change_at).toLocaleString() : undefined,
-            ultimoCambioActor: item.last_change_by || undefined,
-            historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined
-          });
-        });
-        setReportesPorTab(grouped);
+        await loadReportesData();
       } catch (e) {
         console.error('Error cargando reportes', e);
         showToast('No se pudieron cargar reportes', { type: 'error' })
@@ -227,115 +218,83 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     })
   }
 
-  const approveReporte = async (tab, index, comments) => {
+  const loadReportesData = async () => {
     try {
-      const r = reportesPorTab[tab][index]
-      await apiFetch(`/api/reportes/${r.id}/estado`, {
+      const resp = await apiFetch('/api/reportes')
+      const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] }
+      const estadoMap = {
+        EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+        APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
+        RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
+        DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
+      }
+      ;(resp.items || []).forEach(item => {
+        const map = estadoMap[item.estado] || estadoMap.EN_REVISION
+        grouped[map.tab].push({
+          id: item.id,
+          titulo: item.asunto || 'Reporte de Comisión',
+          solicitante: item.usuarios?.nombre || item.docente_id,
+          fechaEntrega: item.fecha_entrega?.slice(0,10) || 'N/A',
+          status: map.status,
+          descripcion: item.descripcion || '',
+          // resumen historial
+          ultimoCambioFecha: item.last_change_at ? new Date(item.last_change_at).toLocaleString() : undefined,
+          ultimoCambioActor: item.last_change_by || undefined,
+          historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined
+        })
+      })
+      setReportesPorTab(grouped)
+    } catch (e) { 
+      console.error('Error recargando reportes', e)
+      showToast('Error al cargar reportes', { type: 'error' })
+    }
+  }
+
+  const approveReporte = async (reporteId, comments) => {
+    try {
+      await apiFetch(`/api/reportes/${reporteId}/estado`, {
         method: 'PATCH',
         body: { estado: 'APROBADO', motivo: comments }
       })
-      // Recargar desde API para reflejar cambios y mantener consistencia
-      await (async function reload() {
-        try {
-          const resp = await apiFetch('/api/reportes')
-          const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] }
-          const estadoMap = {
-            EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-            APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-            RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
-            DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
-          }
-          ;(resp.items || []).forEach(item => {
-            const map = estadoMap[item.estado] || estadoMap.EN_REVISION
-            grouped[map.tab].push({
-              id: item.id,
-              titulo: item.asunto || 'Reporte de Comisión',
-              solicitante: item.usuarios?.nombre || item.docente_id,
-              fechaEntrega: item.fecha_entrega?.slice(0,10) || 'N/A',
-              status: map.status,
-              descripcion: item.descripcion || ''
-            })
-          })
-          setReportesPorTab(grouped)
-        } catch (e) { console.error('Error recargando reportes', e) }
-      })()
+      showToast('Reporte aprobado correctamente', { type: 'success' })
+      await loadReportesData()
       setActiveTabReportes('Aprobados')
+      setModalReporte(null)
     } catch (e) {
       console.error('Error aprobando reporte', e)
+      showToast('Error al aprobar el reporte', { type: 'error' })
     }
   }
 
-  const rejectReporte = async (tab, index, comments) => {
+  const rejectReporte = async (reporteId, comments) => {
     try {
-      const r = reportesPorTab[tab][index]
-      await apiFetch(`/api/reportes/${r.id}/estado`, {
+      await apiFetch(`/api/reportes/${reporteId}/estado`, {
         method: 'PATCH',
         body: { estado: 'RECHAZADO', motivo: comments }
       })
-      await (async function reload() {
-        try {
-          const resp = await apiFetch('/api/reportes')
-          const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] }
-          const estadoMap = {
-            EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-            APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-            RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
-            DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
-          }
-          ;(resp.items || []).forEach(item => {
-            const map = estadoMap[item.estado] || estadoMap.EN_REVISION
-            grouped[map.tab].push({
-              id: item.id,
-              titulo: item.asunto || 'Reporte de Comisión',
-              solicitante: item.usuarios?.nombre || item.docente_id,
-              fechaEntrega: item.fecha_entrega?.slice(0,10) || 'N/A',
-              status: map.status,
-              descripcion: item.descripcion || ''
-            })
-          })
-          setReportesPorTab(grouped)
-        } catch (e) { console.error('Error recargando reportes', e) }
-      })()
+      showToast('Reporte rechazado', { type: 'success' })
+      await loadReportesData()
       setActiveTabReportes('Rechazados')
+      setModalReporte(null)
     } catch (e) {
       console.error('Error rechazando reporte', e)
+      showToast('Error al rechazar el reporte', { type: 'error' })
     }
   }
 
-  const returnReporte = async (tab, index, comments) => {
+  const returnReporte = async (reporteId, comments) => {
     try {
-      const r = reportesPorTab[tab][index]
-      await apiFetch(`/api/reportes/${r.id}/estado`, {
+      await apiFetch(`/api/reportes/${reporteId}/estado`, {
         method: 'PATCH',
         body: { estado: 'DEVUELTO', motivo: comments }
       })
-      await (async function reload() {
-        try {
-          const resp = await apiFetch('/api/reportes')
-          const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] }
-          const estadoMap = {
-            EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-            APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-            RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
-            DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
-          }
-          ;(resp.items || []).forEach(item => {
-            const map = estadoMap[item.estado] || estadoMap.EN_REVISION
-            grouped[map.tab].push({
-              id: item.id,
-              titulo: item.asunto || 'Reporte de Comisión',
-              solicitante: item.usuarios?.nombre || item.docente_id,
-              fechaEntrega: item.fecha_entrega?.slice(0,10) || 'N/A',
-              status: map.status,
-              descripcion: item.descripcion || ''
-            })
-          })
-          setReportesPorTab(grouped)
-        } catch (e) { console.error('Error recargando reportes', e) }
-      })()
+      showToast('Reporte devuelto al docente para corrección', { type: 'success' })
+      await loadReportesData()
       setActiveTabReportes('Devueltos')
+      setModalReporte(null)
     } catch (e) {
       console.error('Error devolviendo reporte', e)
+      showToast('Error al devolver el reporte', { type: 'error' })
     }
   }
   
@@ -472,19 +431,21 @@ export default function AdminDashboard({ setIsAuthenticated }) {
 
   /* ------------- Render ------------- */
   return (
-    <div className={`flex h-screen w-full font-sans overflow-hidden ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
-      <Sidebar
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-        sidebarOpen={sidebarOpen}
-        toggleSidebar={toggleSidebar}
-        confirmLogout={showLogoutModal}
-        showProfile={false}
-        extraItems={[{ label: 'Usuarios', key: 'Usuarios' }]}
-      />
+    <div className={`full-page-container font-sans ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+      <div className="flex min-h-screen w-full">
+        <Sidebar
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+          sidebarOpen={sidebarOpen}
+          toggleSidebar={toggleSidebar}
+          confirmLogout={showLogoutModal}
+          showProfile={false}
+          extraItems={[{ label: 'Usuarios', key: 'Usuarios' }]}
+        />
 
       <MainContent
         sidebarOpen={sidebarOpen}
+        toggleSidebar={toggleSidebar}
         activeSection={activeSection}
         setActiveSection={setActiveSection}
         activeTab={
@@ -551,13 +512,13 @@ export default function AdminDashboard({ setIsAuthenticated }) {
           onClose={() => setModalSolicitud(null)}
           solicitud={modalSolicitud.solicitud}
           onApprove={(c) =>
-            approveRequest(modalSolicitud.tab, modalSolicitud.index, c)
+            approveRequest(modalSolicitud.solicitud.id, c)
           }
           onReject={(c) =>
-            rejectRequest(modalSolicitud.tab, modalSolicitud.index, c)
+            rejectRequest(modalSolicitud.solicitud.id, c)
           }
           onReturn={(c) =>
-            returnRequest(modalSolicitud.tab, modalSolicitud.index, c)
+            returnRequest(modalSolicitud.solicitud.id, c)
           }
         />
       )}
@@ -569,13 +530,13 @@ export default function AdminDashboard({ setIsAuthenticated }) {
           onClose={() => setModalReporte(null)}
           reporte={modalReporte.reporte}
           onApprove={(c) =>
-            approveReporte(modalReporte.tab, modalReporte.index, c)
+            approveReporte(modalReporte.reporte.id, c)
           }
           onReject={(c) =>
-            rejectReporte(modalReporte.tab, modalReporte.index, c)
+            rejectReporte(modalReporte.reporte.id, c)
           }
           onReturn={(c) =>
-            returnReporte(modalReporte.tab, modalReporte.index, c)
+            returnReporte(modalReporte.reporte.id, c)
           }
         />
       )}
@@ -601,11 +562,12 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         confirmDisabled={Boolean(deletingUserId)}
         type="danger"
       />
-      <ProfileDetailsModal
-        open={Boolean(viewUserProfile)}
-        onClose={closeProfileView}
-        profile={viewUserProfile}
-      />
+        <ProfileDetailsModal
+          open={Boolean(viewUserProfile)}
+          onClose={closeProfileView}
+          profile={viewUserProfile}
+        />
+      </div>
     </div>
   )
 }

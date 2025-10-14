@@ -7,14 +7,21 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 const asInt = (v) => (v !== undefined && v !== null ? parseInt(v, 10) : undefined);
 const ESTADOS_REPORTE = ["PENDIENTE", "EN_REVISION", "APROBADO", "RECHAZADO", "DEVUELTO"];
 
-function canTransition(from, to) {
+function canTransition(from, to, role = 'USER') {
   if (from === to) return true;
-  // Terminales
-  if (["APROBADO", "RECHAZADO"].includes(from)) return false;
-  // Desde EN_REVISION o PENDIENTE
-  if (["EN_REVISION", "PENDIENTE"].includes(from) && ["APROBADO", "RECHAZADO", "DEVUELTO"].includes(to)) return true;
-  // Desde DEVUELTO
-  if (from === "DEVUELTO" && to === "EN_REVISION") return true;
+  
+  // Los admins pueden hacer transiciones más flexibles
+  if (role === 'ADMIN') {
+    // Desde EN_REVISION o PENDIENTE
+    if (["EN_REVISION", "PENDIENTE"].includes(from) && ["APROBADO", "RECHAZADO", "DEVUELTO"].includes(to)) return true;
+    // Desde DEVUELTO
+    if (from === "DEVUELTO" && ["EN_REVISION", "APROBADO", "RECHAZADO"].includes(to)) return true;
+    // Desde APROBADO
+    if (from === "APROBADO" && ["RECHAZADO", "DEVUELTO"].includes(to)) return true;
+    // Desde RECHAZADO
+    if (from === "RECHAZADO" && ["APROBADO", "DEVUELTO"].includes(to)) return true;
+  }
+  
   return false;
 }
 
@@ -188,7 +195,7 @@ export default function reportesRouter(prisma) {
       const id = req.params.id;
       const curr = await prisma.reportes.findUnique({ where: { id } });
       if (!curr) return res.status(404).json({ ok: false, msg: "Reporte no encontrado" });
-      if (!canTransition(curr.estado, estado)) {
+      if (!canTransition(curr.estado, estado, 'ADMIN')) {
         return res.status(409).json({ ok: false, msg: `Transición ${curr.estado} -> ${estado} no permitida` });
       }
 

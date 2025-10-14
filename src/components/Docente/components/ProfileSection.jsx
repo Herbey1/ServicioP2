@@ -40,18 +40,86 @@ export default function ProfileSection() {
   const loadProfile = async () => {
     try {
       setLoading(true);
+      console.log("[DEBUG] Cargando perfil...");
+      
+      // Verificar token antes de hacer la petición
+      const token = localStorage.getItem('token');
+      console.log("[DEBUG] Token presente:", !!token);
+      
       const resp = await apiFetch("/api/perfil");
-      if (!resp.ok) {
-        throw new Error(resp.data?.msg || "No se pudo obtener el perfil");
+      console.log("[DEBUG] Respuesta completa del perfil:", JSON.stringify(resp, null, 2));
+      
+      // Verificar si hay error del servidor (status HTTP o respuesta ok: false)
+      if (resp.status >= 400 || (resp.ok === false)) {
+        const errorMsg = resp.data?.msg || resp.msg || `Error del servidor (${resp.status})`;
+        console.error("[Perfil] Error del servidor:", errorMsg, resp);
+        
+        // Si es error de autenticación, mostrar mensaje específico
+        if (resp.status === 401) {
+          showToast("Sesión expirada, por favor inicia sesión nuevamente", { type: "error" });
+          return;
+        }
+        
+        // Para otros errores del servidor, usar datos del localStorage como fallback
+        const userName = localStorage.getItem('userName');
+        const userRole = localStorage.getItem('userRole');
+        
+        if (userName || userRole) {
+          console.log("[DEBUG] Usando datos del localStorage como fallback");
+          setProfile({
+            ...FALLBACK_PROFILE,
+            nombre: userName || FALLBACK_PROFILE.nombre,
+            rol: userRole || FALLBACK_PROFILE.rol,
+          });
+          showToast("Usando datos guardados localmente (problema temporal del servidor)", { type: "warning" });
+          return;
+        }
+        
+        showToast(errorMsg, { type: "error" });
+        return;
       }
-      const next = resp.profile ?? resp.data?.profile ?? FALLBACK_PROFILE;
-      setProfile({
-        ...FALLBACK_PROFILE,
-        ...next,
-      });
+      
+      // Si todo está bien, obtener los datos del perfil
+      const next = resp.profile || resp.data?.profile;
+      console.log("[DEBUG] Datos del perfil extraídos:", next);
+      
+      if (next) {
+        setProfile({
+          ...FALLBACK_PROFILE,
+          ...next,
+        });
+        console.log("[DEBUG] Perfil cargado exitosamente");
+      } else {
+        // Fallback con datos del localStorage
+        const userName = localStorage.getItem('userName');
+        const userRole = localStorage.getItem('userRole');
+        
+        setProfile({
+          ...FALLBACK_PROFILE,
+          nombre: userName || FALLBACK_PROFILE.nombre,
+          rol: userRole || FALLBACK_PROFILE.rol,
+        });
+        
+        showToast("Perfil cargado con datos básicos", { type: "info" });
+      }
+      
     } catch (error) {
       console.error("[Perfil] Error cargando perfil", error);
-      showToast(error.message || "No se pudo obtener el perfil", { type: "error" });
+      
+      // Fallback final con localStorage
+      const userName = localStorage.getItem('userName');
+      const userRole = localStorage.getItem('userRole');
+      
+      if (userName || userRole) {
+        setProfile({
+          ...FALLBACK_PROFILE,
+          nombre: userName || FALLBACK_PROFILE.nombre,
+          rol: userRole || FALLBACK_PROFILE.rol,
+        });
+        showToast("Error de conexión, usando datos guardados", { type: "warning" });
+      } else {
+        showToast("Error de conexión al cargar el perfil", { type: "error" });
+      }
     } finally {
       setLoading(false);
     }

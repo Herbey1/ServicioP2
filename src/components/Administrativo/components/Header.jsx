@@ -25,7 +25,7 @@ export default function Header({
         )}
 
         <div className="flex items-center gap-3 justify-between md:justify-end md:min-w-[220px]">
-          <DarkModeToggle />
+          <DarkModeToggle variant="button" />
 
           {showSectionSwitch && (
             <div className={`flex ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full p-1 w-full sm:w-64`}>

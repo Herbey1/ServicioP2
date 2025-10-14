@@ -19,11 +19,17 @@ export default function ReviewReporteModal({
   const [historial, setHistorial] = useState([])
   const [loadingHist, setLoadingHist] = useState(false)
 
-  const handleAction = (action) => {
+  const handleAction = async (action) => {
     if (processing) return
     setProcessing(true)
-    action(comments)   // pasa comentarios si aplica
-    onClose()          // cierra de inmediato
+    try {
+      await action(comments)
+      // El modal se cerrará automáticamente desde el dashboard
+      setComments("") // Limpiar comentarios
+    } catch (error) {
+      console.error('Error en acción:', error)
+      setProcessing(false) // Re-habilitar botones si hay error
+    }
   }
   
   useEffect(() => {
@@ -102,35 +108,99 @@ export default function ReviewReporteModal({
             />
           </div>
 
-          {/* Botones */}
+          {/* Botones - Condicionalmente según el estado */}
           <div className="flex flex-wrap gap-3 justify-end">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              className={`px-4 py-2 ${darkMode ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} rounded-md`}
             >
-              Cancelar
+              {reporte.status === "En revisión" ? "Cancelar" : "Cerrar"}
             </button>
-            <button
-              disabled={processing}
-              onClick={() => handleAction(onReturn)}
-              className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 disabled:opacity-60"
-            >
-              Devolver para corrección
-            </button>
-            <button
-              disabled={processing}
-              onClick={() => handleAction(onReject)}
-              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-60"
-            >
-              Rechazar
-            </button>
-            <button
-              disabled={processing}
-              onClick={() => handleAction(onApprove)}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-60"
-            >
-              Aprobar
-            </button>
+            
+            {/* Solo mostrar botones de acción si está en revisión */}
+            {reporte.status === "En revisión" && (
+              <>
+                <button
+                  disabled={processing}
+                  onClick={() => handleAction(onReturn)}
+                  className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 disabled:opacity-60"
+                >
+                  Devolver para corrección
+                </button>
+                <button
+                  disabled={processing}
+                  onClick={() => handleAction(onReject)}
+                  className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-60"
+                >
+                  Rechazar
+                </button>
+                <button
+                  disabled={processing}
+                  onClick={() => handleAction(onApprove)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-60"
+                >
+                  Aprobar
+                </button>
+              </>
+            )}
+
+            {/* Botones específicos para cada estado */}
+            {reporte.status === "Aprobado" && (
+              <>
+                <button
+                  disabled={processing}
+                  onClick={() => handleAction(onReturn)}
+                  className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 disabled:opacity-60"
+                >
+                  Devolver para corrección
+                </button>
+                <button
+                  disabled={processing}
+                  onClick={() => handleAction(onReject)}
+                  className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-60"
+                >
+                  Rechazar
+                </button>
+              </>
+            )}
+
+            {reporte.status === "Rechazado" && (
+              <>
+                <button
+                  disabled={processing}
+                  onClick={() => handleAction(onReturn)}
+                  className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 disabled:opacity-60"
+                >
+                  Devolver para corrección
+                </button>
+                <button
+                  disabled={processing}
+                  onClick={() => handleAction(onApprove)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-60"
+                >
+                  Aprobar
+                </button>
+              </>
+            )}
+
+            {reporte.status === "Devuelto" && (
+              <>
+                <button
+                  disabled={processing}
+                  onClick={() => handleAction(onReject)}
+                  className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-60"
+                >
+                  Rechazar
+                </button>
+                <button
+                  disabled={processing}
+                  onClick={() => handleAction(onApprove)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-60"
+                >
+                  Aprobar
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

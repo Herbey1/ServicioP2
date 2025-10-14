@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useTheme } from "../../context/ThemeContext"
 import { apiFetch } from "../../api/client"
+import { Bars3Icon } from "../common/Icons"
 
 /* Layout y navegación */
 import Sidebar             from "./components/Sidebar"
@@ -102,6 +103,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   })
   const [solicitudesAprobadas, setSolicitudesAprobadas] = useState([])
 
+  // TODO: Mover esta lógica a un custom hook (ej. useSolicitudes) para reutilizar y limpiar el componente.
   const [loadingSolicitudes, setLoadingSolicitudes] = useState(false);
   useEffect(() => {
     async function load() {
@@ -430,8 +432,8 @@ export default function DashboardDocente({ setIsAuthenticated }) {
     Aprobado     : { text: "text-green-700",  bg: "bg-green-100"  },
     Rechazada    : { text: "text-red-700",    bg: "bg-red-100"    },
     Rechazado    : { text: "text-red-700",    bg: "bg-red-100"    },
-    Devuelta     : { text: "text-orange-700", bg: "bg-orange-100" },
-    Devuelto     : { text: "text-orange-700", bg: "bg-orange-100" }
+  Devuelta     : { text: "text-orange-700", bg: "bg-orange-100" },
+  Devuelto     : { text: "text-orange-700", bg: "bg-orange-100" }
   }
   /* ──────────────── Listas visibles ──────────────── */
   const solicitudesActivas = solicitudesPorTab[activeTabComisiones] || []
@@ -439,19 +441,22 @@ export default function DashboardDocente({ setIsAuthenticated }) {
 
   /* ──────────────── Render ──────────────── */
   return (
-    <div className={`flex h-screen w-full font-sans overflow-hidden ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
-      <ErrorBoundary>
-      {/* Sidebar */}
-      <Sidebar
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-        sidebarOpen={sidebarOpen}
-        toggleSidebar={toggleSidebar}
-        confirmLogout={confirmLogout}
-      />
+    <div className={`full-page-container font-sans ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+      <div className="flex min-h-screen w-full">
+        <ErrorBoundary>
+        {/* Sidebar */}
+        <Sidebar
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+          sidebarOpen={sidebarOpen}
+          toggleSidebar={toggleSidebar}
+          confirmLogout={confirmLogout}
+        />
 
-      {/* Contenedor principal */}
-      <div className={`flex-1 p-8 flex flex-col transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"} ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}>
+        {/* Contenedor principal */}
+        <div className={`flex-1 p-4 sm:p-6 lg:p-8 flex flex-col transition-all duration-300 safe-positioning 
+                        ${sidebarOpen ? "ml-72" : "ml-0"} 
+                        ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}>
         {/* Header (oculto en Perfil) */}
         {activeSection !== "Perfil" && (
           <Header
@@ -462,11 +467,25 @@ export default function DashboardDocente({ setIsAuthenticated }) {
           />
         )}
 
-        {/* Titular dinámico */}
+        {/* Header con botón hamburguesa y título */}
         {activeSection !== "Perfil" && (
-          <h2 className="text-2xl font-bold mb-6">
-            {activeSection === "Comisiones" ? "Mis solicitudes" : "Mis reportes"}
-          </h2>
+          <div className="flex items-center space-x-4 mb-6">
+            {/* Botón hamburguesa - solo visible cuando sidebar cerrado */}
+            {!sidebarOpen && (
+              <button
+                onClick={toggleSidebar}
+                className="bg-green-700 hover:bg-green-800 text-white 
+                         p-3 rounded-xl cursor-pointer shadow-lg transition-all duration-200
+                         focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                aria-label="Abrir menú de navegación"
+              >
+                <Bars3Icon className="h-6 w-6" />
+              </button>
+            )}
+            <h2 className="text-2xl font-bold">
+              {activeSection === "Comisiones" ? "Mis solicitudes" : "Mis reportes"}
+            </h2>
+          </div>
         )}
 
         {/* ----- SECCIÓN COMISIONES ----- */}
@@ -556,7 +575,27 @@ export default function DashboardDocente({ setIsAuthenticated }) {
         )}
 
         {/* ----- SECCIÓN PERFIL ----- */}
-        {activeSection === "Perfil" && <ProfileSection />}
+        {activeSection === "Perfil" && (
+          <>
+            {/* Header específico para Perfil con botón hamburguesa */}
+            <div className="flex items-center space-x-4 mb-6">
+              {/* Botón hamburguesa - solo visible cuando sidebar cerrado */}
+              {!sidebarOpen && (
+                <button
+                  onClick={toggleSidebar}
+                  className="bg-green-700 hover:bg-green-800 text-white 
+                           p-3 rounded-xl cursor-pointer shadow-lg transition-all duration-200
+                           focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                  aria-label="Abrir menú de navegación"
+                >
+                  <Bars3Icon className="h-6 w-6" />
+                </button>
+              )}
+              <h2 className="text-2xl font-bold">Mi Perfil</h2>
+            </div>
+            <ProfileSection />
+          </>
+        )}
       </div>
 
       {/* ────────── Modales COMISIONES ────────── */}
@@ -611,13 +650,14 @@ export default function DashboardDocente({ setIsAuthenticated }) {
         />
       )}
 
-      {/* Logout */}
-      <LogoutConfirmModal
-        showLogoutConfirm={showLogout}
-        cancelLogout={cancelLogout}
-        handleLogout={handleLogout}
-      />
-      </ErrorBoundary>
+        {/* Logout */}
+        <LogoutConfirmModal
+          showLogoutConfirm={showLogout}
+          cancelLogout={cancelLogout}
+          handleLogout={handleLogout}
+        />
+        </ErrorBoundary>
+      </div>
     </div>
   )
 }

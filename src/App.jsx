@@ -10,19 +10,70 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import ToastContainer from './components/common/ToastContainer';
+import { apiFetch } from './api/client';
 
-function App() {  // Inicializar el estado de autenticación y el rol desde localStorage
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return !!localStorage.getItem('token');
-  });
+function App() {
+  // Inicializar estados como false hasta validar el token
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState('docente');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [userRole, setUserRole] = useState(() => {
-    return localStorage.getItem('userRole') || 'docente';
-  });
+  // Validar token al cargar la app
+  useEffect(() => {
+    const validateToken = async () => {
+      const token = localStorage.getItem('token');
+      const storedRole = localStorage.getItem('userRole');
+      
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Intentar hacer una llamada autenticada para validar el token
+        const response = await apiFetch('/api/perfil');
+        
+        if (response.ok) {
+          // Token válido
+          setIsAuthenticated(true);
+          setUserRole(storedRole || 'docente');
+        } else {
+          // Token inválido, limpiar localStorage
+          console.log('Token inválido, limpiando localStorage');
+          localStorage.removeItem('token');
+          localStorage.removeItem('userRole');
+          localStorage.removeItem('userName');
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        // Error de conexión o token inválido
+        console.log('Error validando token:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('userRole'); 
+        localStorage.removeItem('userName');
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    validateToken();
+  }, []);
   
   useEffect(() => {
-    localStorage.setItem('userRole', userRole);
-  }, [userRole]);
+    if (isAuthenticated) {
+      localStorage.setItem('userRole', userRole);
+    }
+  }, [userRole, isAuthenticated]);
+
+  // Mostrar loading mientras validamos el token
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-xl">Validando sesión...</div>
+      </div>
+    );
+  }
 
   return (
     <ThemeProvider>
