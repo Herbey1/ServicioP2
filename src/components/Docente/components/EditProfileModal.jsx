@@ -36,34 +36,24 @@ export default function EditProfileModal({ open, close, profile, save }) {
         {/* Formulario */}
         <div className="grid grid-cols-1 gap-4">
           {Object.entries(formData).map(([label, value]) => {
-            // Si el campo es "categoria", mostrarlo como "categoría" y deshabilitarlo
-            if (label === "categoria") {
-              return (
-                <div key={label}>
-                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Categoría</label>
-                  <input
-                    name={label}
-                    value={value}
-                    className={`w-full rounded-lg px-3 py-2 ${
-                      darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-100 text-gray-700'
-                    }`}
-                    readOnly
-                    disabled
-                  />
-                </div>
-              )
-            }
-            
+            const isTelefono = label === "telefono";
+            const shownLabel = label === "categoria" ? "Categoría" : label === "departamento" ? "Programa educativo" : label;
+
             return (
               <div key={label}>
                 <label className={`block text-sm font-medium capitalize mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {label === "categoria" ? "Categoría" : label === "departamento" ? "Programa educativo" : label}
+                  {shownLabel}
                 </label>
-                <input                  name={label}
+                <input
+                  name={label}
                   value={value}
                   onChange={handleChange}
+                  readOnly={!isTelefono}
+                  disabled={!isTelefono}
                   className={`w-full rounded-lg px-3 py-2 ${
-                    darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-white text-gray-700'
+                    darkMode
+                      ? (!isTelefono ? 'border-gray-600 bg-gray-700 text-gray-300 cursor-not-allowed' : 'border-gray-600 bg-gray-700 text-gray-300')
+                      : (!isTelefono ? 'border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed' : 'border-gray-300 bg-white text-gray-700')
                   }`}
                 />
               </div>
