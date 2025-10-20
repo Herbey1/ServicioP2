@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../api/client";
-import LoginSidebar from "./components/LoginSidebar";
+// LoginSidebar removed - using full-screen background
 import LoginHeader from "./components/LoginHeader";
 import UserTypeSelector from "./components/UserTypeSelector";
 import LoginForm from "./components/LoginForm";
+import BgImage from "../../assets/images/fcqi-background.jpg";
 
 function LoginPage({ setIsAuthenticated, setUserRole }) {
   const [email, setEmail] = useState("");
@@ -82,10 +83,13 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
   };
 
   return (
-    <div className="flex h-screen w-full">
-      <LoginSidebar />
-      <div className="w-2/3 flex items-center justify-center bg-gray-100">
-        <div className="w-[450px] p-8">
+    <div
+      className="flex h-screen w-full bg-cover bg-center"
+      style={{ backgroundImage: `url(${BgImage})` }}
+    >
+      {/* Fullscreen background with centered card */}
+      <div className="flex-1 flex items-center justify-center">
+  <div className="w-full max-w-md bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-8 m-6">
           <LoginHeader />
           <UserTypeSelector userType={userType} setUserType={setUserType} />
           <LoginForm
