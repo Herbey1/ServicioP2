@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { useTheme } from "../../context/ThemeContext"
 import { apiFetch } from "../../api/client"
@@ -15,6 +15,57 @@ import MainContent          from "./components/MainContent"
 import ReviewSolicitudModal from "./components/ReviewSolicitudModal"
 import ReviewReporteModal   from "./components/ReviewReporteModal"
 import AddDocenteModal      from "./components/AddDocenteModal"
+
+const isDateInRange = (value, { desde, hasta }) => {
+  if (!desde && !hasta) return true;
+  if (!value) return false;
+  if (desde && value < desde) return false;
+  if (hasta && value > hasta) return false;
+  return true;
+};
+
+const mapSolicitudItem = (item) => {
+  const estadoMap = {
+    EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+    APROBADA: { tab: 'Aprobadas', status: 'Aprobada' },
+    RECHAZADA: { tab: 'Rechazadas', status: 'Rechazada' },
+    DEVUELTA: { tab: 'Devueltas', status: 'Devuelta' }
+  };
+  const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
+  return {
+    id: item.id,
+    titulo: item.asunto,
+    solicitante: item.usuarios?.nombre || item.docente_id,
+    fechaSalida: item.fecha_salida?.slice(0,10) || "",
+    status: map.status,
+    tab: map.tab,
+    ultimoCambioFecha: item.last_change_at ? new Date(item.last_change_at).toLocaleString() : undefined,
+    ultimoCambioActor: item.last_change_by || undefined,
+    historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined
+  };
+};
+
+const mapReporteItem = (item) => {
+  const estadoMap = {
+    EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+    APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
+    RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
+    DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
+  };
+  const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
+  return {
+    id: item.id,
+    titulo: item.asunto || "Reporte de Comisión",
+    solicitante: item.usuarios?.nombre || item.docente_id,
+    fechaEntrega: item.fecha_entrega?.slice(0,10) || "",
+    status: map.status,
+    descripcion: item.descripcion || "",
+    tab: map.tab,
+    ultimoCambioFecha: item.last_change_at ? new Date(item.last_change_at).toLocaleString() : undefined,
+    ultimoCambioActor: item.last_change_by || undefined,
+    historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined
+  };
+};
 
 export default function AdminDashboard({ setIsAuthenticated }) {
   /* ------------- UI general ------------- */
@@ -44,31 +95,19 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   })
   const [modalSolicitud, setModalSolicitud] = useState(null) // { tab, index, solicitud }
   const [loadingSolicitudes, setLoadingSolicitudes] = useState(false)
+  const [solicitudSearch, setSolicitudSearch] = useState("")
+  const [reporteSearch, setReporteSearch] = useState("")
+  const [solicitudFilters, setSolicitudFilters] = useState({ desde: "", hasta: "" })
+  const [reporteFilters, setReporteFilters] = useState({ desde: "", hasta: "" })
 
   const loadSolicitudes = async () => {
     try {
       setLoadingSolicitudes(true)
       const resp = await apiFetch('/api/solicitudes');
       const grouped = { Pendientes: [], Aprobadas: [], Rechazadas: [], Devueltas: [] };
-      const estadoMap = {
-        EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-        APROBADA: { tab: 'Aprobadas', status: 'Aprobada' },
-        RECHAZADA: { tab: 'Rechazadas', status: 'Rechazada' },
-        DEVUELTA: { tab: 'Devueltas', status: 'Devuelta' }
-      };
       (resp.items || []).forEach(item => {
-        const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
-        grouped[map.tab].push({
-          id: item.id,
-          titulo: item.asunto,
-          solicitante: item.usuarios?.nombre || item.docente_id,
-          fechaSalida: item.fecha_salida?.slice(0,10),
-          status: map.status,
-          // Resumen de historial
-          ultimoCambioFecha: item.last_change_at ? new Date(item.last_change_at).toLocaleString() : undefined,
-          ultimoCambioActor: item.last_change_by || undefined,
-          historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined
-        });
+        const mapped = mapSolicitudItem(item);
+        grouped[mapped.tab].push(mapped);
       });
       setSolicitudesPorTab(grouped);
     } catch (e) {
@@ -158,47 +197,27 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   const [modalReporte, setModalReporte] = useState(null) // { tab, index, reporte }
   const [loadingReportes, setLoadingReportes] = useState(false)
 
-  useEffect(() => {
-    async function loadReportes() {
-      try {
-        setLoadingReportes(true)
-        const resp = await apiFetch('/api/reportes'); 
-        const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
-
-        // Mapeo de estados de la base de datos a las pestañas de la UI
-        const estadoMap = {
-          EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-          APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-          RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' }, // Asegúrate que este estado exista en tu enum de reportes
-          DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
-        };
-        
-        (resp.items || []).forEach(item => {
-          // Asegúrate que 'item.estado' y 'item.usuarios.nombre' existan en la respuesta de tu API
-          const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
-          grouped[map.tab].push({
-            id: item.id,
-            titulo: item.asunto || "Reporte de Comisión", // Ajusta según el campo correcto
-            solicitante: item.usuarios?.nombre || item.docente_id,
-            fechaEntrega: item.fecha_entrega?.slice(0,10) || "N/A",
-            status: map.status,
-            descripcion: item.descripcion || "",
-            // resumen historial
-            ultimoCambioFecha: item.last_change_at ? new Date(item.last_change_at).toLocaleString() : undefined,
-            ultimoCambioActor: item.last_change_by || undefined,
-            historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined
-          });
-        });
-        setReportesPorTab(grouped);
-      } catch (e) {
-        console.error('Error cargando reportes', e);
-        showToast('No se pudieron cargar reportes', { type: 'error' })
-      } finally {
-        setLoadingReportes(false)
-      }
+  const loadReportes = useCallback(async () => {
+    try {
+      setLoadingReportes(true)
+      const resp = await apiFetch('/api/reportes'); 
+      const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
+      (resp.items || []).forEach(item => {
+        const mapped = mapReporteItem(item);
+        grouped[mapped.tab].push(mapped);
+      });
+      setReportesPorTab(grouped);
+    } catch (e) {
+      console.error('Error cargando reportes', e);
+      showToast('No se pudieron cargar reportes', { type: 'error' })
+    } finally {
+      setLoadingReportes(false)
     }
+  }, [showToast]);
+
+  useEffect(() => {
     loadReportes();
-  }, []);
+  }, [loadReportes]);
 
   const handleReviewReporte = (tab, index, reporte) =>
     setModalReporte({ tab, index, reporte: { ...reporte } })
@@ -206,7 +225,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   const moveSolicitud = (from, to, index, extra = {}) => {
     setSolicitudesPorTab(prev => {
       const data = { ...prev }
-      const item = { ...data[from][index], ...extra }
+      const item = { ...data[from][index], ...extra, tab: to }
       data[from] = data[from].filter((_, i) => i !== index)
       data[to]   = [...data[to], item]
       return data
@@ -216,7 +235,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   const moveReporte = (from, to, index, extra = {}) => {
     setReportesPorTab(prev => {
       const data = { ...prev }
-      const item = { ...data[from][index], ...extra }
+      const item = { ...data[from][index], ...extra, tab: to }
       data[from] = data[from].filter((_, i) => i !== index)
       data[to]   = [...data[to], item]
       return data
@@ -231,30 +250,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         body: { estado: 'APROBADO', motivo: comments }
       })
       // Recargar desde API para reflejar cambios y mantener consistencia
-      await (async function reload() {
-        try {
-          const resp = await apiFetch('/api/reportes')
-          const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] }
-          const estadoMap = {
-            EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-            APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-            RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
-            DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
-          }
-          ;(resp.items || []).forEach(item => {
-            const map = estadoMap[item.estado] || estadoMap.EN_REVISION
-            grouped[map.tab].push({
-              id: item.id,
-              titulo: item.asunto || 'Reporte de Comisión',
-              solicitante: item.usuarios?.nombre || item.docente_id,
-              fechaEntrega: item.fecha_entrega?.slice(0,10) || 'N/A',
-              status: map.status,
-              descripcion: item.descripcion || ''
-            })
-          })
-          setReportesPorTab(grouped)
-        } catch (e) { console.error('Error recargando reportes', e) }
-      })()
+      await loadReportes()
       setActiveTabReportes('Aprobados')
     } catch (e) {
       console.error('Error aprobando reporte', e)
@@ -268,30 +264,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         method: 'PATCH',
         body: { estado: 'RECHAZADO', motivo: comments }
       })
-      await (async function reload() {
-        try {
-          const resp = await apiFetch('/api/reportes')
-          const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] }
-          const estadoMap = {
-            EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-            APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-            RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
-            DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
-          }
-          ;(resp.items || []).forEach(item => {
-            const map = estadoMap[item.estado] || estadoMap.EN_REVISION
-            grouped[map.tab].push({
-              id: item.id,
-              titulo: item.asunto || 'Reporte de Comisión',
-              solicitante: item.usuarios?.nombre || item.docente_id,
-              fechaEntrega: item.fecha_entrega?.slice(0,10) || 'N/A',
-              status: map.status,
-              descripcion: item.descripcion || ''
-            })
-          })
-          setReportesPorTab(grouped)
-        } catch (e) { console.error('Error recargando reportes', e) }
-      })()
+      await loadReportes()
       setActiveTabReportes('Rechazados')
     } catch (e) {
       console.error('Error rechazando reporte', e)
@@ -305,30 +278,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         method: 'PATCH',
         body: { estado: 'DEVUELTO', motivo: comments }
       })
-      await (async function reload() {
-        try {
-          const resp = await apiFetch('/api/reportes')
-          const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] }
-          const estadoMap = {
-            EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-            APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-            RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
-            DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
-          }
-          ;(resp.items || []).forEach(item => {
-            const map = estadoMap[item.estado] || estadoMap.EN_REVISION
-            grouped[map.tab].push({
-              id: item.id,
-              titulo: item.asunto || 'Reporte de Comisión',
-              solicitante: item.usuarios?.nombre || item.docente_id,
-              fechaEntrega: item.fecha_entrega?.slice(0,10) || 'N/A',
-              status: map.status,
-              descripcion: item.descripcion || ''
-            })
-          })
-          setReportesPorTab(grouped)
-        } catch (e) { console.error('Error recargando reportes', e) }
-      })()
+      await loadReportes()
       setActiveTabReportes('Devueltos')
     } catch (e) {
       console.error('Error devolviendo reporte', e)
@@ -432,6 +382,22 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     if (addingDocente) return
     setShowAddDocente(false)
   }
+
+  const handleSearchChange = useCallback((value) => {
+    if (activeSection === "Comisiones") {
+      setSolicitudSearch(value);
+    } else if (activeSection === "Reportes") {
+      setReporteSearch(value);
+    }
+  }, [activeSection]);
+
+  const clearSolicitudFilters = useCallback(() => {
+    setSolicitudFilters({ desde: "", hasta: "" });
+  }, []);
+
+  const clearReporteFilters = useCallback(() => {
+    setReporteFilters({ desde: "", hasta: "" });
+  }, []);
   /* ------------- Auxiliares UI ------------- */  const toggleSidebar   = () => setSidebarOpen(!sidebarOpen)
   const showLogoutModal = () => setShowLogout(true)
   const hideLogoutModal = () => setShowLogout(false)
@@ -447,8 +413,38 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     navigate("/login")
   }
   /* Listas visibles */
-  const solicitudesActivas = solicitudesPorTab[activeTabComisiones] || []
-  const reportesActivos    = reportesPorTab[activeTabReportes]     || []
+  const solicitudesActivasRaw = solicitudesPorTab[activeTabComisiones] || []
+  const reportesActivosRaw    = reportesPorTab[activeTabReportes]     || []
+  const solicitudSearchTerm = solicitudSearch.trim().toLowerCase()
+  const reporteSearchTerm = reporteSearch.trim().toLowerCase()
+  const solicitudesActivas = solicitudesActivasRaw.filter((solicitud) => {
+    const titulo = (solicitud.titulo || "").toLowerCase()
+    const fecha = solicitud.fechaSalida || ""
+    const matchesSearch = !solicitudSearchTerm || titulo.includes(solicitudSearchTerm)
+    const matchesDate = isDateInRange(fecha, solicitudFilters)
+    return matchesSearch && matchesDate
+  })
+  const reportesActivos = reportesActivosRaw.filter((reporte) => {
+    const titulo = (reporte.titulo || "").toLowerCase()
+    const fecha = reporte.fechaEntrega || ""
+    const matchesSearch = !reporteSearchTerm || titulo.includes(reporteSearchTerm)
+    const matchesDate = isDateInRange(fecha, reporteFilters)
+    return matchesSearch && matchesDate
+  })
+  const solicitudFiltersApplied = Boolean(solicitudSearchTerm || solicitudFilters.desde || solicitudFilters.hasta)
+  const reporteFiltersApplied = Boolean(reporteSearchTerm || reporteFilters.desde || reporteFilters.hasta)
+  const solicitudDateActive = Boolean(solicitudFilters.desde || solicitudFilters.hasta)
+  const reporteDateActive = Boolean(reporteFilters.desde || reporteFilters.hasta)
+  const currentSearchValue = activeSection === "Comisiones"
+    ? solicitudSearch
+    : activeSection === "Reportes"
+    ? reporteSearch
+    : ""
+  const currentSearchPlaceholder = activeSection === "Comisiones"
+    ? "Buscar solicitud..."
+    : activeSection === "Reportes"
+    ? "Buscar reporte..."
+    : ""
 
   /* ------------- Render ------------- */
   return (
@@ -484,6 +480,20 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         loadingReportes={loadingReportes}
         loadingUsuarios={loadingUsuarios}
         usuarios={usuarios}
+        searchValue={currentSearchValue}
+        onSearchChange={handleSearchChange}
+        searchPlaceholder={currentSearchPlaceholder}
+        showSearch={activeSection !== "Usuarios"}
+        solicitudFilters={solicitudFilters}
+        setSolicitudFilters={setSolicitudFilters}
+        reporteFilters={reporteFilters}
+        setReporteFilters={setReporteFilters}
+        clearSolicitudFilters={clearSolicitudFilters}
+        clearReporteFilters={clearReporteFilters}
+        solicitudFiltersApplied={solicitudFiltersApplied}
+        reporteFiltersApplied={reporteFiltersApplied}
+        solicitudDateActive={solicitudDateActive}
+        reporteDateActive={reporteDateActive}
         counts={
           activeSection === 'Comisiones'
             ? {

@@ -9,19 +9,37 @@ export default function Header({
   isAdmin = false,
   title = "",
   onAddDocenteClick,
-  disableAddDocente = false
+  disableAddDocente = false,
+  searchValue = "",
+  onSearchChange = () => {},
+  searchPlaceholder = "",
+  showSearch = false
 }) {
   const { darkMode } = useTheme();
 
   const showSectionSwitch = activeSection !== "Usuarios";
+  const canShowSearch = showSearch && activeSection !== "Usuarios";
+  const searchInputClass = `w-full sm:w-64 pl-4 pr-6 py-2 text-sm rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-green-600 ${darkMode ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-700 placeholder-gray-500'}`;
 
   return (
-    <div className={`flex flex-col gap-4 mb-8 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+    <div className={`flex flex-col gap-4 mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         {title && (
-          <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-700'}`}>
-            {title}
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-700'}`}>
+              {title}
+            </h1>
+            {canShowSearch && (
+              <input
+                type="search"
+                value={searchValue}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder={searchPlaceholder || "Buscar..."}
+                className={searchInputClass}
+                aria-label="Buscar"
+              />
+            )}
+          </div>
         )}
 
         <div className="flex items-center gap-3 justify-between md:justify-end md:min-w-[220px]">

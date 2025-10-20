@@ -2,9 +2,14 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
 
 export async function apiFetch(path, { method = 'GET', headers = {}, body, token } = {}) {
   const opts = { method, headers: { ...headers } };
-  if (body !== undefined) {
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
+  if (body !== undefined && body !== null) {
+    if (body instanceof FormData) {
+      opts.body = body;
+      // Permit that the browser set the multipart boundary automatically.
+    } else {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
   }
   const auth = token || (typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null);
   if (auth) {

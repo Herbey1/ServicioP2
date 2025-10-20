@@ -1,7 +1,7 @@
 "use client"
 
 import PropTypes from "prop-types"
-import { useRef } from "react"
+import { useId, useRef } from "react"
 import { useTheme } from "../../../context/ThemeContext"
 
 export default function CreateReporteModal({
@@ -21,6 +21,8 @@ export default function CreateReporteModal({
   const textClass = darkMode ? 'text-white' : 'text-gray-900';
   const buttonPrimaryClass = `px-6 py-2 bg-green-700 text-white font-medium rounded-full hover:bg-green-800`;
   const buttonSecondaryClass = `px-6 py-2 font-medium rounded-full ${darkMode ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`;
+  const fileButtonClass = `inline-flex items-center justify-center border border-green-700 text-green-700 px-4 py-2 rounded-full text-sm font-medium bg-transparent hover:bg-green-700 hover:text-white transition-colors`;
+  const fileInputId = useId();
   
   if (!show) return null
 
@@ -54,7 +56,9 @@ export default function CreateReporteModal({
             className={`${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
             aria-label="Cerrar"
           >
-            ×
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -128,12 +132,24 @@ export default function CreateReporteModal({
               Evidencia (PDF o ZIP)
             </label>
             <input
+              id={fileInputId}
               type="file"
               accept=".pdf,.zip"
               ref={fileInputRef}
               onChange={handleFileChange}
-              className={inputClass}
+              className="hidden"
             />
+            <label
+              htmlFor={fileInputId}
+              className={fileButtonClass}
+            >
+              Seleccionar archivo
+            </label>
+            {nuevoReporte.evidencia && (
+              <p className={`mt-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                {nuevoReporte.evidencia.name}
+              </p>
+            )}
           </div>
         </div>
         {/* Botones */}

@@ -11,7 +11,8 @@ export default function ComisionesSection({
   solicitudesActivas, 
   loading = false,
   counts = {},
-  handleReviewClick 
+  handleReviewClick,
+  filtersApplied = false
 }) {
   const { darkMode } = useTheme();
 
@@ -40,7 +41,9 @@ export default function ComisionesSection({
           ))
         ) : (
           <div className={`text-center py-10 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            No hay solicitudes {activeTab.toLowerCase()}
+            {filtersApplied
+              ? `No hay solicitudes ${activeTab.toLowerCase()} que coincidan con la búsqueda o el rango de fechas.`
+              : `No hay solicitudes ${activeTab.toLowerCase()}.`}
           </div>
         )}
 
