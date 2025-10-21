@@ -607,10 +607,11 @@ export default function DashboardDocente({ setIsAuthenticated }) {
         const estadoMap = {
           EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
           APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-          RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
+          RECHAZO: { tab: 'Rechazados', status: 'Rechazado' },
           DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
         };
-        (resp.items || []).forEach(item => {
+        const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
+        items.forEach(item => {
           const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
           grouped[map.tab].push({
             id: item.id,
@@ -655,10 +656,11 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       const estadoMap = {
         EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
         APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-        RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
+        RECHAZO: { tab: 'Rechazados', status: 'Rechazado' },
         DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
       };
-      (resp.items || []).forEach(item => {
+      const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
+      items.forEach(item => {
         const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
         grouped[map.tab].push({
           id: item.id,
