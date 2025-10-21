@@ -9,6 +9,7 @@ export default function Header({
   isAdmin = false,
   title = "",
   onAddDocenteClick,
+  onRefreshComisiones,
   disableAddDocente = false,
   searchValue = "",
   onSearchChange = () => {},
@@ -29,6 +30,22 @@ export default function Header({
             <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-700'}`}>
               {title}
             </h1>
+            {isAdmin && activeSection === 'Comisiones' && onRefreshComisiones && (
+              <button
+                onClick={onRefreshComisiones}
+                className="ml-2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
+                aria-label="Refrescar comisiones"
+                title="Refrescar comisiones"
+              >
+                {/* Feather refresh-cw icon (stroke) */}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.13-3.36L23 10"></path>
+                  <path d="M20.49 15a9 9 0 0 1-14.13 3.36L1 14"></path>
+                </svg>
+              </button>
+            )}
             {canShowSearch && (
               <input
                 type="search"

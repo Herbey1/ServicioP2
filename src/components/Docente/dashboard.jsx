@@ -241,6 +241,17 @@ export default function DashboardDocente({ setIsAuthenticated }) {
     loadSolicitudes();
   }, [loadSolicitudes]);
 
+  // Escuchar cambios en localStorage para sincronizar entre pestañas (ej. admin aprueba)
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === 'sgca_solicitudes_update') {
+        loadSolicitudes();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [loadSolicitudes]);
+
   const fetchSolicitudDetalle = useCallback(async (solicitudId) => {
     const resp = await apiFetch(`/api/solicitudes/${solicitudId}`);
     if (!resp.ok) {

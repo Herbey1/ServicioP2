@@ -105,7 +105,8 @@ export default function AdminDashboard({ setIsAuthenticated }) {
       setLoadingSolicitudes(true)
       const resp = await apiFetch('/api/solicitudes');
       const grouped = { Pendientes: [], Aprobadas: [], Rechazadas: [], Devueltas: [] };
-      (resp.items || []).forEach(item => {
+      const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
+      items.forEach(item => {
         const mapped = mapSolicitudItem(item);
         grouped[mapped.tab].push(mapped);
       });
@@ -148,11 +149,20 @@ export default function AdminDashboard({ setIsAuthenticated }) {
 
   const changeEstado = async (id, estado, motivo) => {
     try {
-      await apiFetch(`/api/solicitudes/${id}/estado`, {
+      const resp = await apiFetch(`/api/solicitudes/${id}/estado`, {
         method: 'PATCH',
         body: { estado, motivo }
       })
-      return true
+      if (resp && resp.ok) {
+        // Notificar a otras pestañas en el mismo navegador que hubo un cambio
+        try { localStorage.setItem('sgca_solicitudes_update', Date.now().toString()); } catch (e) { /* noop */ }
+        return true
+      }
+      // Mostrar mensaje de error detallado si el servidor lo proporciona
+      console.error('Error cambiando estado, respuesta no OK', resp)
+      const msg = resp?.data?.msg || resp?.data?.message || `Error: ${resp?.status || 'unknown'}`;
+      showToast(msg || 'No se pudo cambiar el estado', { type: 'error' })
+      return false
     } catch (e) {
       console.error('Error cambiando estado', e)
       showToast('No se pudo cambiar el estado', { type: 'error' })
@@ -160,16 +170,55 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     }
   }
 
+  // Obtener estado actual del recurso para validar antes de transicionar
+  const getSolicitudEstado = async (id) => {
+    try {
+      const resp = await apiFetch(`/api/solicitudes/${id}`);
+      if (!resp.ok) return { ok: false };
+      return { ok: true, estado: resp?.data?.estado };
+    } catch (e) {
+      return { ok: false };
+    }
+  }
+
   const approveRequest = async (tab, index, comments) => {
     const sol = solicitudesPorTab[tab][index]
-    if (!await changeEstado(sol.id, 'APROBADA', comments)) return
+    const current = await getSolicitudEstado(sol.id)
+    if (!current.ok) {
+      await loadSolicitudes()
+      showToast('No se pudo verificar el estado actual', { type: 'error' })
+      return
+    }
+    if (current.estado && current.estado !== 'EN_REVISION') {
+      await loadSolicitudes()
+      showToast(`No se puede aprobar: estado actual = ${current.estado}`, { type: 'error' })
+      return
+    }
+    if (!await changeEstado(sol.id, 'APROBADA', comments)) {
+      await loadSolicitudes()
+      return
+    }
     await loadSolicitudes()
     setActiveTabComisiones("Aprobadas")
   }
 
   const rejectRequest = async (tab, index, comments) => {
     const sol = solicitudesPorTab[tab][index]
-    if (!await changeEstado(sol.id, 'RECHAZADA', comments)) return
+    const current = await getSolicitudEstado(sol.id)
+    if (!current.ok) {
+      await loadSolicitudes()
+      showToast('No se pudo verificar el estado actual', { type: 'error' })
+      return
+    }
+    if (current.estado && current.estado !== 'EN_REVISION') {
+      await loadSolicitudes()
+      showToast(`No se puede rechazar: estado actual = ${current.estado}`, { type: 'error' })
+      return
+    }
+    if (!await changeEstado(sol.id, 'RECHAZADA', comments)) {
+      await loadSolicitudes()
+      return
+    }
     moveSolicitud(tab, "Rechazadas", index, {
       status: "Rechazada",
       comentariosAdmin: comments
@@ -179,7 +228,21 @@ export default function AdminDashboard({ setIsAuthenticated }) {
 
   const returnRequest = async (tab, index, comments) => {
     const sol = solicitudesPorTab[tab][index]
-    if (!await changeEstado(sol.id, 'DEVUELTA', comments)) return
+    const current = await getSolicitudEstado(sol.id)
+    if (!current.ok) {
+      await loadSolicitudes()
+      showToast('No se pudo verificar el estado actual', { type: 'error' })
+      return
+    }
+    if (current.estado && current.estado !== 'EN_REVISION') {
+      await loadSolicitudes()
+      showToast(`No se puede devolver: estado actual = ${current.estado}`, { type: 'error' })
+      return
+    }
+    if (!await changeEstado(sol.id, 'DEVUELTA', comments)) {
+      await loadSolicitudes()
+      return
+    }
     moveSolicitud(tab, "Devueltas", index, {
       status: "Devuelta",
       comentariosAdmin: comments
@@ -202,7 +265,8 @@ export default function AdminDashboard({ setIsAuthenticated }) {
       setLoadingReportes(true)
       const resp = await apiFetch('/api/reportes'); 
       const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
-      (resp.items || []).forEach(item => {
+      const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
+      items.forEach(item => {
         const mapped = mapReporteItem(item);
         grouped[mapped.tab].push(mapped);
       });
@@ -472,7 +536,9 @@ export default function AdminDashboard({ setIsAuthenticated }) {
             : setActiveTabReportes
         }
         tabs={activeSection === "Comisiones" ? tabsComisiones : tabsReportes}
-        onAddDocenteClick={() => setShowAddDocente(true)}
+  onAddDocenteClick={() => setShowAddDocente(true)}
+  onRefreshComisiones={loadSolicitudes}
+  onRefreshReportes={loadReportes}
         disableAddDocenteButton={addingDocente}
         solicitudesActivas={solicitudesActivas}
         reportesActivos={reportesActivos}
