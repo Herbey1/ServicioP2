@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import LoginPage from './components/Login/LoginPage';
 import SolicitudesInterface from './components/Docente/dashboard';
 import AdminDashboard from './components/Administrativo/dashboard';
+import ContactPage from './pages/ContactPage';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import ToastContainer from './components/common/ToastContainer';
@@ -51,6 +52,7 @@ function App() {  // Inicializar el estado de autenticación y el rol desde loca
             }
           />
           <Route path="/" element={<Navigate to={isAuthenticated ? (userRole === 'docente' ? "/dashboard" : "/admin") : "/login"} />} />
+          <Route path="/contacto" element={<ContactPage />} />
         </Routes>
       </Router>
       <ToastContainer />
