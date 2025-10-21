@@ -14,11 +14,13 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
   const [password, setPassword] = useState("");
   const [userType, setUserType] = useState("docente");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
+    setIsLoading(true);
 
     const cleanEmail = email.trim();
     const cleanPassword = password.trim();
@@ -63,6 +65,7 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
         setIsAuthenticated(true);
         setUserRole(rol);
         navigate(rol === "docente" ? "/dashboard" : "/admin");
+        setIsLoading(false);
         return;
       }
 
@@ -76,9 +79,11 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
           ? "Selecciona un tipo de usuario valido."
           : "Ocurrio un error en el servidor.");
       setErrorMessage(serverMessage);
+      setIsLoading(false);
     } catch (err) {
       console.error("Error al iniciar sesion", err);
       setErrorMessage("No se pudo conectar con el servidor.");
+      setIsLoading(false);
     }
   };
 
@@ -99,6 +104,7 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
             setPassword={setPassword}
             handleSubmit={handleSubmit}
             errorMessage={errorMessage}
+            isLoading={isLoading}
           />
         </div>
       </div>

@@ -6,7 +6,8 @@ export default function LoginForm({
   password, 
   setPassword, 
   handleSubmit,
-  errorMessage 
+  errorMessage,
+  isLoading
 }) {
   const canSubmit = email.trim().length > 0 && password.trim().length > 0;
 
@@ -50,14 +51,14 @@ export default function LoginForm({
 
       <button
         type="submit"
-        disabled={!canSubmit}
+        disabled={!canSubmit || isLoading}
         className={`w-full py-3 rounded-md font-medium mt-4 transition-colors ${
-          canSubmit
+          canSubmit && !isLoading
             ? 'bg-green-700 text-white hover:bg-green-800 cursor-pointer'
             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
         }`}
       >
-        Iniciar sesión
+        {isLoading ? 'Iniciando...' : 'Iniciar sesión'}
       </button>
     </form>
   );
