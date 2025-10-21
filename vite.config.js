@@ -11,6 +11,18 @@ export default defineConfig({
     host: true,
     port: 3000
   },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',

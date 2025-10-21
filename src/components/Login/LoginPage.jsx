@@ -7,24 +7,24 @@ import LoginSidebar from "./components/LoginSidebar";
 import LoginHeader from "./components/LoginHeader";
 import UserTypeSelector from "./components/UserTypeSelector";
 import LoginForm from "./components/LoginForm";
+import { useToast } from "../../context/ToastContext";
 
 function LoginPage({ setIsAuthenticated, setUserRole }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [userType, setUserType] = useState("docente");
-  const [errorMessage, setErrorMessage] = useState("");
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage("");
 
     const cleanEmail = email.trim();
     const cleanPassword = password.trim();
     const fullEmail = cleanEmail.includes("@") ? cleanEmail : `${cleanEmail}@uabc.edu.mx`;
 
     if (!cleanEmail || !cleanPassword) {
-      setErrorMessage("Por favor completa todos los campos.");
+      showToast("Por favor completa todos los campos.", { type: "error" });
       return;
     }
 
@@ -50,11 +50,10 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
         const backendRole = typeof user?.rol === "string" ? user.rol.trim().toUpperCase() : "";
 
         if (backendRole !== expectedRole) {
-          setErrorMessage("El correo no corresponde al tipo de usuario seleccionado.");
+          showToast("El correo no corresponde al tipo de usuario seleccionado.", { type: "error" });
           return;
         }
 
-        setErrorMessage("");
         localStorage.setItem("token", token);
         localStorage.setItem("userName", user?.nombre ?? "");
 
@@ -74,28 +73,37 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
           : response.status === 400
           ? "Selecciona un tipo de usuario valido."
           : "Ocurrio un error en el servidor.");
-      setErrorMessage(serverMessage);
+      showToast(serverMessage, { type: "error" });
     } catch (err) {
       console.error("Error al iniciar sesion", err);
-      setErrorMessage("No se pudo conectar con el servidor.");
+      showToast("No se pudo conectar con el servidor.", { type: "error" });
     }
   };
 
   return (
-    <div className="flex h-screen w-full">
-      <LoginSidebar />
-      <div className="w-2/3 flex items-center justify-center bg-gray-100">
-        <div className="w-[450px] p-8">
-          <LoginHeader />
-          <UserTypeSelector userType={userType} setUserType={setUserType} />
-          <LoginForm
-            email={email}
-            setEmail={setEmail}
-            password={password}
-            setPassword={setPassword}
-            handleSubmit={handleSubmit}
-            errorMessage={errorMessage}
-          />
+    <div className="full-page-container bg-gray-50 dark:bg-gray-900">
+      <div className="flex flex-1 min-h-screen w-full">
+        <LoginSidebar />
+        
+        <div className="flex flex-1 items-center justify-center p-2 lg:p-4 min-h-screen">
+          <div className="w-full max-w-sm no-overlap">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-4 border border-gray-200 dark:border-gray-700">
+              <LoginHeader />
+              <UserTypeSelector userType={userType} setUserType={setUserType} />
+              <LoginForm
+                email={email}
+                setEmail={setEmail}
+                password={password}
+                setPassword={setPassword}
+                handleSubmit={handleSubmit}
+              />
+            </div>
+            
+            {/* Footer */}
+            <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-2">
+              © 2025 UABC - FCQI. Todos los derechos reservados.
+            </p>
+          </div>
         </div>
       </div>
     </div>

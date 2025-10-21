@@ -21,14 +21,32 @@ function normalizeProyecto(v) {
 const padTime = (t) => (t && t.length === 5 ? `${t}:00` : t);           // "08:00" -> "08:00:00"
 const toDateTime = (fecha, hora) => new Date(`${fecha}T${padTime(hora)}`); // "2025-09-01T08:00:00"
 const dateOnly = (d) => new Date(d).toISOString().slice(0, 10);           // Date -> "YYYY-MM-DD"
-
-function canTransition(from, to) {
-  if (from === to) return true;
-  if (from === "CANCELADA") return false;
-  if (from === "APROBADA" && to !== "DEVUELTA") return false;
-  if (from === "RECHAZADA" && to !== "DEVUELTA") return false;
-  if (from === "EN_REVISION" && ["APROBADA","RECHAZADA","DEVUELTA","CANCELADA"].includes(to)) return true;
-  if (from === "DEVUELTA" && ["EN_REVISION","CANCELADA"].includes(to)) return true;
+ 
+/**
+ * Define las transiciones de estado permitidas.
+ * La clave es el estado de origen, y el valor es un array de estados de destino posibles.
+ */
+const ALLOWED_TRANSITIONS = {
+  EN_REVISION: ["APROBADA", "RECHAZADA", "DEVUELTA", "CANCELADA"],
+  DEVUELTA:    ["EN_REVISION", "APROBADA", "RECHAZADA", "CANCELADA"],
+  APROBADA:    ["RECHAZADA", "DEVUELTA"], // Admin puede cambiar de aprobada a rechazada o devuelta
+  RECHAZADA:   ["APROBADA", "DEVUELTA"],  // Admin puede cambiar de rechazada a aprobada o devuelta
+  // CANCELADA es un estado final.
+};
+ 
+function canTransition(from, to, role = 'USER') {
+  if (from === to) return true; // No hay transición
+  
+  // Los admins tienen más flexibilidad para cambiar estados
+  if (role === 'ADMIN') {
+    return ALLOWED_TRANSITIONS[from]?.includes(to) ?? false;
+  }
+  
+  // Los usuarios normales solo pueden hacer transiciones básicas
+  if (from === 'EN_REVISION') {
+    return ["CANCELADA"].includes(to);
+  }
+  
   return false;
 }
 
@@ -294,7 +312,7 @@ export default function solicitudesRouter(prisma) {
 
       const s = await prisma.solicitudes.findUnique({ where: { id: req.params.id } });
       if (!s) return res.status(404).json({ ok:false, msg:"No encontrada" });
-      if (!canTransition(s.estado, estado)) return res.status(409).json({ ok:false, msg:`Transición ${s.estado} -> ${estado} no permitida` });
+      if (!canTransition(s.estado, estado, 'ADMIN')) return res.status(409).json({ ok:false, msg:`Transición ${s.estado} -> ${estado} no permitida` });
 
       const out = await prisma.$transaction(async (tx) => {
         const upd = await tx.solicitudes.update({

@@ -4,29 +4,45 @@ import { useState, useEffect } from "react"
 import PropTypes from "prop-types"
 import { useTheme } from "../../../context/ThemeContext"
 
-export default function EditProfileModal({ open, close, profile, save }) {
+function buildInitial(profile, fields) {
+  const initial = {};
+  fields.forEach(({ key }) => {
+    initial[key] = profile?.[key] ?? "";
+  });
+  return initial;
+}
+
+export default function EditProfileModal({ open, close, profile, save, fields }) {
   const { darkMode } = useTheme();
-  const [formData, setFormData] = useState(profile)
+  const [formData, setFormData] = useState(() => buildInitial(profile, fields))
   const [processing, setProcessing] = useState(false)
 
   /* Sincroniza los datos cada vez que se abre el modal */
   useEffect(() => {
-    if (open) setFormData(profile)
-  }, [open, profile])
+    if (open) setFormData(buildInitial(profile, fields))
+  }, [open, profile, fields])
 
   if (!open) return null
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+  const handleChange = (e, editable) => {
+    if (!editable) return;
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (processing) return
     setProcessing(true)
-    /** Aquí llamarías al endpoint PUT /perfil. Simulación: */
-    setTimeout(() => {
-      save(formData)          // actualiza en el padre
-      setProcessing(false)
-    }, 500)
+    try {
+      const ok = await Promise.resolve(save(formData));
+      if (ok === false) {
+        setProcessing(false);
+        return;
+      }
+      setProcessing(false);
+    } catch (e) {
+      console.error("[Perfil] Error guardando perfil", e);
+      setProcessing(false);
+    }
   }
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -35,39 +51,48 @@ export default function EditProfileModal({ open, close, profile, save }) {
 
         {/* Formulario */}
         <div className="grid grid-cols-1 gap-4">
-          {Object.entries(formData).map(([label, value]) => {
-            // Si el campo es "categoria", mostrarlo como "categoría" y deshabilitarlo
-            if (label === "categoria") {
+          {fields.map(({ key, label, editable = true, transform }) => {
+            const value = formData[key] ?? "";
+            const baseLabel = label ?? key;
+            const isEditable = editable !== false;
+
+            const readOnlyClasses = `w-full rounded-lg px-3 py-2 ${
+              darkMode ? 'border-gray-600 bg-gray-700 text-gray-400' : 'border-gray-200 bg-gray-100 text-gray-500'
+            }`;
+            const inputClasses = `w-full rounded-lg px-3 py-2 ${
+              darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-white text-gray-700'
+            }`;
+
+            if (!isEditable) {
               return (
-                <div key={label}>
-                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Categoría</label>
+                <div key={key}>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {baseLabel}
+                  </label>
                   <input
-                    name={label}
-                    value={value}
-                    className={`w-full rounded-lg px-3 py-2 ${
-                      darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-100 text-gray-700'
-                    }`}
+                    name={key}
+                    value={transform ? transform(value) : value ?? ""}
+                    className={readOnlyClasses}
                     readOnly
                     disabled
                   />
                 </div>
-              )
+              );
             }
-            
+
             return (
-              <div key={label}>
+              <div key={key}>
                 <label className={`block text-sm font-medium capitalize mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {label === "categoria" ? "Categoría" : label === "departamento" ? "Programa educativo" : label}
+                  {baseLabel}
                 </label>
-                <input                  name={label}
-                  value={value}
-                  onChange={handleChange}
-                  className={`w-full rounded-lg px-3 py-2 ${
-                    darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-white text-gray-700'
-                  }`}
+                <input
+                  name={key}
+                  value={value ?? ""}
+                  onChange={(e) => handleChange(e, isEditable)}
+                  className={inputClasses}
                 />
               </div>
-            )
+            );
           })}
         </div>
 
@@ -96,5 +121,13 @@ EditProfileModal.propTypes = {
   open: PropTypes.bool.isRequired,
   close: PropTypes.func.isRequired,
   profile: PropTypes.object.isRequired,
-  save: PropTypes.func.isRequired
+  save: PropTypes.func.isRequired,
+  fields: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      label: PropTypes.string,
+      editable: PropTypes.bool,
+      transform: PropTypes.func,
+    })
+  ).isRequired,
 }

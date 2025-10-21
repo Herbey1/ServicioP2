@@ -16,10 +16,7 @@ INSERT INTO tipos_participacion (nombre) VALUES
   ('Capacitación')
 ON CONFLICT (nombre) DO NOTHING;
 
--- Usuarios de prueba por rol
--- Admin: admin@uabc.edu.mx / WkdbdY45LFtvoBdhfcGkGQ
--- Docente: docente@uabc.edu.mx / Docente123!
-INSERT INTO usuarios (nombre, correo, contrasena_hash, rol, verificado) VALUES
-  ('Administrador SGCA', 'admin@uabc.edu.mx', '$2b$12$4ohKrAK1CgLZ7GeYa1uUTuC63sLdwTheZZbj/O95YV5N7fdfElsmq', 'ADMIN', TRUE),
-  ('Docente de Prueba', 'docente@uabc.edu.mx', '$2b$12$mUAdfuxdlUwuQ0jUE9rjtezHi3EXjfrcbrzfEWsye7bRmGeQvK/he', 'DOCENTE', TRUE)
+INSERT INTO usuarios (nombre, correo, contrasena_hash, rol, verificado, telefono, departamento, categoria) VALUES
+  ('Administrador SGCA', 'admin@uabc.edu.mx', '$2b$12$4ohKrAK1CgLZ7GeYa1uUTuC63sLdwTheZZbj/O95YV5N7fdfElsmq', 'ADMIN', TRUE, '(686) 555-1000', 'Coordinación Administrativa', 'Administrador'),
+  ('Docente de Prueba', 'docente@uabc.edu.mx', '$2b$12$mUAdfuxdlUwuQ0jUE9rjtezHi3EXjfrcbrzfEWsye7bRmGeQvK/he', 'DOCENTE', TRUE, '(686) 555-2000', 'Ingeniería en Computación', 'Docente de Tiempo Completo')
 ON CONFLICT (correo) DO NOTHING;
