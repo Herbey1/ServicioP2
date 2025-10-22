@@ -40,7 +40,7 @@ export default function LoginForm({
           placeholder="Ingresa tu contraseña"
         />
         <div className="text-right mt-1">
-          <a href="#" className="text-gray-500 text-sm">¿Olvidaste tu contraseña?</a>
+          <Link to="/forgot-password" className="text-gray-500 text-sm">¿Olvidaste tu contraseña?</Link>
         </div>
       </div>
 

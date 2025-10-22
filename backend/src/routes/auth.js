@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import express from "express";
 import { requireAuth } from "../middleware/auth.js";
+import crypto from "crypto";
 
 export default function authRouter(prisma) {
   const router = express.Router();
@@ -100,6 +101,67 @@ export default function authRouter(prisma) {
     } catch (error) {
       console.error("[AUTH] Error al cambiar contraseña", error);
       return res.status(500).json({ ok: false, msg: "No se pudo cambiar la contraseña" });
+    }
+  });
+
+  // POST /api/auth/forgot-password
+  router.post("/forgot-password", async (req, res) => {
+    try {
+      const { correo } = req.body || {};
+      if (!correo) return res.status(400).json({ ok: false, msg: "Correo requerido" });
+
+      // Buscamos usuario (si no existe, devolvemos 200 para no filtrar existencia)
+      const user = await prisma.usuarios.findUnique({ where: { correo } });
+
+      if (!user) {
+        // Responder 200 indistintamente
+        return res.json({ ok: true });
+      }
+
+      // Crear token aleatorio
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
+
+      // Guardar en password_resets
+      await prisma.password_resets.create({ data: { user_id: user.id, token, expires_at: expiresAt } });
+
+      // Encolar email en email_queue (se procesará por un worker si existe)
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(token)}`;
+      const subject = 'Restablece tu contraseña';
+      const body = `Hola ${user.nombre},\n\nVisita el siguiente enlace para restablecer tu contraseña:\n\n${resetLink}\n\nSi no solicitaste este cambio, ignora este mensaje.`;
+
+      await prisma.email_queue.create({ data: { to_email: user.correo, subject, body } });
+
+      return res.json({ ok: true });
+    } catch (e) {
+      console.error('[AUTH] Error forgot-password', e);
+      return res.status(500).json({ ok: false, msg: 'No se pudo procesar la solicitud' });
+    }
+  });
+
+  // POST /api/auth/reset-password
+  router.post('/reset-password', async (req, res) => {
+    try {
+      const { token, newPassword } = req.body || {};
+      if (!token || !newPassword) return res.status(400).json({ ok: false, msg: 'Token y nueva contraseña requeridos' });
+      if (String(newPassword).trim().length < 8) return res.status(400).json({ ok: false, msg: 'La nueva contraseña debe tener al menos 8 caracteres' });
+
+      const pr = await prisma.password_resets.findUnique({ where: { token } , include: { user: true }});
+      if (!pr) return res.status(400).json({ ok: false, msg: 'Token inválido' });
+      if (pr.used_at) return res.status(400).json({ ok: false, msg: 'Token ya usado' });
+      if (pr.expires_at && pr.expires_at < new Date()) return res.status(400).json({ ok: false, msg: 'Token expirado' });
+
+      const hash = await bcrypt.hash(String(newPassword), 12);
+      await prisma.$transaction(async (tx) => {
+        await tx.usuarios.update({ where: { id: pr.user_id }, data: { contrasena_hash: hash, updated_at: new Date() } });
+        await tx.password_resets.update({ where: { id: pr.id }, data: { used_at: new Date() } });
+      });
+
+      return res.json({ ok: true });
+    } catch (e) {
+      console.error('[AUTH] Error reset-password', e);
+      return res.status(500).json({ ok: false, msg: 'No se pudo restablecer la contraseña' });
     }
   });
 
