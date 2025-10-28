@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
 import authRouter from "./routes/auth.js";
+import perfilRouter from "./routes/perfil.js";
 import solicitudesRouter from "./routes/solicitudes.js";
 import reportesRouter from "./routes/reportes.js";
 import { requireAuth, requireRole } from "./middleware/auth.js";
@@ -23,6 +24,7 @@ const UPLOAD_ROOT = path.join(__dirname, "..", "uploads");
 
 app.use(cors());
 app.use(express.json());
+app.use("/api/perfil", requireAuth, perfilRouter(prisma));
 
 // Health
 app.get("/api/health", async (_req, res) => {
