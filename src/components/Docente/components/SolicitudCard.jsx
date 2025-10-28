@@ -28,13 +28,21 @@ export default function SolicitudCard({ solicitud, index, statusColors, handleEd
             {solicitud.status}
           </p>
         </div>
-        {/* Botón Editar disponible en En revisión y Devuelta */}
+        {/* Botón Editar disponible en En revisión y Devuelta. Botón Ver en Aprobadas/Rechazadas */}
         {["En revisión", "Devuelta", "Requiere correcciones"].includes(solicitud.status) && (
           <button
             onClick={() => handleEditClick(solicitud, index)}
             className={`font-medium text-sm ${darkMode ? 'text-green-400 hover:text-green-300' : 'text-green-700 hover:text-green-900'}`}
           >
             {solicitud.status === "Devuelta" ? "Corregir" : "Editar"}
+          </button>
+        )}
+        {["Aprobada", "Rechazada"].includes(solicitud.status) && (
+          <button
+            onClick={() => handleEditClick(solicitud, index, true)}
+            className={`font-medium text-sm ${darkMode ? 'text-green-400 hover:text-green-300' : 'text-green-700 hover:text-green-900'}`}
+          >
+            Ver
           </button>
         )}
       </div>

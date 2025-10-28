@@ -60,6 +60,9 @@ function LoginPage({ setIsAuthenticated, setUserRole }) {
         setErrorMessage("");
         localStorage.setItem("token", token);
         localStorage.setItem("userName", user?.nombre ?? "");
+        if (user?.must_change_password) {
+          try { localStorage.setItem('mustChangePassword', '1'); } catch {}
+        }
 
         const rol = backendRole === "ADMIN" ? "admin" : "docente";
         setIsAuthenticated(true);

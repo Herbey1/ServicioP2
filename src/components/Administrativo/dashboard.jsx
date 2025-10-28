@@ -24,6 +24,24 @@ const isDateInRange = (value, { desde, hasta }) => {
   return true;
 };
 
+const formatDateOnly = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") return value.slice(0, 10);
+  try { return value.toISOString().slice(0, 10); } catch { return ""; }
+};
+
+const formatTimeOnly = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (!Number.isNaN(date.getTime())) {
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  }
+  if (typeof value === "string" && value.length >= 16) {
+    return value.slice(11, 16);
+  }
+  return "";
+};
+
 const mapSolicitudItem = (item) => {
   const estadoMap = {
     EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
@@ -32,16 +50,25 @@ const mapSolicitudItem = (item) => {
     DEVUELTA: { tab: 'Devueltas', status: 'Devuelta' }
   };
   const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
+  // intentar resolver un texto para el tipo de participación (si viene como texto alterno)
+  const tipoParticipacion = item.tipo_participacion_otro ?? (item.tipo_participacion_id ? String(item.tipo_participacion_id) : "");
   return {
     id: item.id,
-    titulo: item.asunto,
+    titulo: item.asunto || "",
     solicitante: item.usuarios?.nombre || item.docente_id,
-    fechaSalida: item.fecha_salida?.slice(0,10) || "",
+    ciudad: item.ciudad || "",
+    pais: item.pais || "",
+    fechaSalida: formatDateOnly(item.fecha_salida),
+    fechaRegreso: formatDateOnly(item.fecha_regreso),
+    horaSalida: formatTimeOnly(item.hora_salida),
+    horaRegreso: formatTimeOnly(item.hora_regreso),
+    tipoParticipacion: tipoParticipacion,
     status: map.status,
     tab: map.tab,
     ultimoCambioFecha: item.last_change_at ? new Date(item.last_change_at).toLocaleString() : undefined,
     ultimoCambioActor: item.last_change_by || undefined,
-    historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined
+    historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined,
+    comentariosAdmin: item.motivo_estado ?? undefined
   };
 };
 
@@ -72,7 +99,18 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   const navigate = useNavigate()
   const { darkMode } = useTheme();
   const { showToast } = useToast();
-  const [activeSection, setActiveSection] = useState("Comisiones")      // "Comisiones" | "Reportes" | "Usuarios"
+  // Persistir sección activa en localStorage para que al recargar la página no vuelva al dashboard
+  const [activeSection, setActiveSectionRaw] = useState(() => {
+    try {
+      return localStorage.getItem('sgca_active_section') || 'Comisiones'
+    } catch {
+      return 'Comisiones'
+    }
+  })
+  const setActiveSection = (v) => {
+    try { localStorage.setItem('sgca_active_section', v) } catch {}
+    setActiveSectionRaw(v)
+  }
   const tabsComisiones = ["Pendientes", "Aprobadas", "Rechazadas", "Devueltas"]
   const tabsReportes   = ["Pendientes", "Aprobados", "Rechazados", "Devueltos"]
   const [activeTabComisiones, setActiveTabComisiones] = useState("Pendientes")
@@ -353,10 +391,9 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     const payload = {
       nombre: (nombre || '').trim(),
       correo: (correo || '').trim(),
-      rol,
-      password: password?.trim()
+      rol
     }
-    if (!payload.nombre || !payload.correo || !payload.password) return
+    if (!payload.nombre || !payload.correo) return
 
     try {
       setAddingDocente(true)
@@ -582,6 +619,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         handleChangeUserRole={handleChangeUserRole}
         handleToggleUserActive={handleToggleUserActive}
         handleDeleteUser={handleDeleteUser}
+        onUploadUsers={loadUsuarios}
         userActionId={userActionId}
         deletingUserId={deletingUserId}
       />

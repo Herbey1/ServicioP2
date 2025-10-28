@@ -45,6 +45,7 @@ export default function MainContent({
   handleChangeUserRole,
   handleToggleUserActive,
   handleDeleteUser,
+  onUploadUsers,
   userActionId,
   deletingUserId
 }) {
@@ -210,6 +211,7 @@ export default function MainContent({
           deletingUserId={deletingUserId}
           onAddUser={onAddDocenteClick}
           addingUser={disableAddDocenteButton}
+          onUploadComplete={onUploadUsers}
         />
       )}
     </div>

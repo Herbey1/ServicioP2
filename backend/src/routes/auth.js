@@ -61,12 +61,33 @@ export default function authRouter(prisma) {
       return res.status(401).json({ ok: false, msg: "Credenciales invalidas" });
     }
 
+    // Si el usuario usa la contraseña por defecto ('docente' o 'admin'), forzamos
+    // el cambio de contraseña en la respuesta y tratamos de persistirlo en la BD
+    const lowerPwd = String(password ?? '').trim();
+    const defaultPwds = new Set(['docente', 'admin']);
+    const usedDefaultPwd = defaultPwds.has(lowerPwd);
+
+    if (usedDefaultPwd) {
+      try {
+        // Intentamos actualizar la columna must_change_password = true.
+        await prisma.usuarios.update({ where: { id: user.id }, data: { must_change_password: true } });
+      } catch (e) {
+        // Si la columna no existe en la BD (cliente Prisma sin migración), ignoramos el error
+        const msg = String(e?.message ?? '');
+        if (!msg.includes('must_change_password') && !msg.includes('Unknown argument')) {
+          console.error('[AUTH] Error actualizando must_change_password', e);
+        }
+      }
+    }
+
     const token = jwt.sign({ sub: user.id, rol: user.rol }, process.env.JWT_SECRET, { expiresIn: "8h" });
+
+    const responseMustChange = usedDefaultPwd || (user.must_change_password ?? false);
 
     res.json({
       ok: true,
       token,
-      user: { id: user.id, nombre: user.nombre, correo: user.correo, rol: user.rol }
+      user: { id: user.id, nombre: user.nombre, correo: user.correo, rol: user.rol, must_change_password: responseMustChange }
     });
   });
 
@@ -95,7 +116,19 @@ export default function authRouter(prisma) {
       }
 
       const hash = await bcrypt.hash(String(newPassword), 12);
-      await prisma.usuarios.update({ where: { id: user.id }, data: { contrasena_hash: hash, updated_at: new Date() } });
+      // Intentamos actualizar incluyendo must_change_password; si la columna no existe,
+      // reintentamos sin ella.
+      try {
+        await prisma.usuarios.update({ where: { id: user.id }, data: { contrasena_hash: hash, updated_at: new Date(), must_change_password: false } });
+      } catch (e) {
+        const msg = String(e?.message ?? '');
+        if (msg.includes('must_change_password') || msg.includes('Unknown argument')) {
+          // Retry without that field
+          await prisma.usuarios.update({ where: { id: user.id }, data: { contrasena_hash: hash, updated_at: new Date() } });
+        } else {
+          throw e;
+        }
+      }
 
       return res.json({ ok: true });
     } catch (error) {

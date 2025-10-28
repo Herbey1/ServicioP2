@@ -50,14 +50,25 @@ export default function ReportCard({ reporte, index, statusColors, handleEdit })
           {reporte.status}
         </span>
 
-        {["En revisión", "Requiere correcciones", "Devuelto"].includes(
-          reporte.status
-        ) && (
+        {[
+          "En revisión",
+          "Requiere correcciones",
+          "Devuelto"
+        ].includes(reporte.status) && (
           <button
             onClick={() => handleEdit(reporte, index)}
             className="text-green-700 hover:text-green-900 font-medium text-sm"
           >
             Editar
+          </button>
+        )}
+
+        {["Aprobado", "Rechazado"].includes(reporte.status) && (
+          <button
+            onClick={() => handleEdit(reporte, index, true)}
+            className="text-green-700 hover:text-green-900 font-medium text-sm"
+          >
+            Ver
           </button>
         )}
       </div>
