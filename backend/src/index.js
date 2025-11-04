@@ -12,7 +12,16 @@ import usuariosRouter from "./routes/usuarios.js";
 
 dotenv.config();
 const app = express();
-const prisma = new PrismaClient();
+
+// Inicializar Prisma con manejo de error
+let prisma;
+try {
+  prisma = new PrismaClient();
+  console.log("✅ Prisma initialized");
+} catch (e) {
+  console.error("❌ Failed to initialize Prisma:", e);
+  prisma = null;
+}
 
 // === ruta absoluta a /uploads
 const __filename = fileURLToPath(import.meta.url);
@@ -35,12 +44,15 @@ app.get("/", (_req, res) => {
 // Health
 app.get("/api/health", async (_req, res) => {
   try { 
+    if (!prisma) {
+      return res.status(500).json({ ok: false, message: "Prisma not available" }); 
+    }
     await prisma.$queryRaw`SELECT 1`; 
     res.status(200).json({ ok: true, message: "Backend is healthy" }); 
   }
   catch (e) { 
     console.error("Health check failed:", e);
-    res.status(500).json({ ok: false, error: e.message }); 
+    res.status(503).json({ ok: false, error: e.message }); 
   }
 });
 
@@ -106,6 +118,11 @@ const server = app.listen(port, '0.0.0.0', () => {
   console.log(`✅ API started on http://0.0.0.0:${port}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`DATABASE_URL configured: ${process.env.DATABASE_URL ? 'yes' : 'NO - THIS IS A PROBLEM'}`);
+  
+  // Log heartbeat every 10 seconds so Railway knows the app is alive
+  setInterval(() => {
+    console.log(`[${new Date().toISOString()}] ❤️  Heartbeat - Server is alive`);
+  }, 10000);
 });
 
 // Handle errors
