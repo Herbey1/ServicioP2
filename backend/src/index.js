@@ -32,6 +32,15 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Root endpoint - simplest possible
+app.get("/", (_req, res) => {
+  res.json({ 
+    ok: true, 
+    message: "Backend is alive",
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Health
 app.get("/api/health", async (_req, res) => {
   try { 
