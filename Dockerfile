@@ -19,7 +19,7 @@ RUN npx prisma generate
 # Exponer puerto 4000
 EXPOSE 4000
 
-# Iniciar - asegurarse de que escuche en 0.0.0.0
-CMD ["npm", "start"]
+# Iniciar directamente con node, no con npm
+CMD ["node", "src/index.js"]
 
 
