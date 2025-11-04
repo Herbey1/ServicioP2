@@ -14,20 +14,42 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 
-
-
 // === ruta absoluta a /uploads
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const UPLOAD_ROOT = path.join(__dirname, "..", "uploads");
 
-app.use(cors());
+// CORS Configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://serviciop2.vercel.app', 'https://servicio-p2.vercel.app', /\.vercel\.app$/]
+    : '*',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health
 app.get("/api/health", async (_req, res) => {
-  try { await prisma.$queryRaw`SELECT 1`; res.json({ ok: true }); }
-  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  try { 
+    await prisma.$queryRaw`SELECT 1`; 
+    res.json({ ok: true, message: "Backend is healthy" }); 
+  }
+  catch (e) { 
+    res.status(500).json({ ok: false, error: e.message }); 
+  }
+});
+
+// Test endpoint
+app.get("/api/test", (_req, res) => {
+  res.json({ 
+    ok: true, 
+    message: "Backend is reachable",
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Catálogos de ejemplo 
