@@ -19,22 +19,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const UPLOAD_ROOT = path.join(__dirname, "..", "uploads");
 
-// CORS Configuration
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://serviciop2.vercel.app', 'https://servicio-p2.vercel.app', /\.vercel\.app$/]
-    : '*',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
-
-app.use(cors(corsOptions));
+// CORS Configuration - permisivo en producción
+app.use(cors());
 app.use(express.json());
 
 // Root endpoint - simplest possible
 app.get("/", (_req, res) => {
-  res.json({ 
+  res.status(200).json({ 
     ok: true, 
     message: "Backend is alive",
     timestamp: new Date().toISOString()
@@ -45,16 +36,17 @@ app.get("/", (_req, res) => {
 app.get("/api/health", async (_req, res) => {
   try { 
     await prisma.$queryRaw`SELECT 1`; 
-    res.json({ ok: true, message: "Backend is healthy" }); 
+    res.status(200).json({ ok: true, message: "Backend is healthy" }); 
   }
   catch (e) { 
+    console.error("Health check failed:", e);
     res.status(500).json({ ok: false, error: e.message }); 
   }
 });
 
 // Test endpoint
 app.get("/api/test", (_req, res) => {
-  res.json({ 
+  res.status(200).json({ 
     ok: true, 
     message: "Backend is reachable",
     timestamp: new Date().toISOString()
@@ -63,10 +55,23 @@ app.get("/api/test", (_req, res) => {
 
 // Catálogos de ejemplo 
 app.get("/api/catalogos/programas", async (_req, res) => {
-  res.json(await prisma.programas_educativos.findMany({ orderBy: { id: "asc" } }));
+  try {
+    const data = await prisma.programas_educativos.findMany({ orderBy: { id: "asc" } });
+    res.status(200).json(data);
+  } catch (e) {
+    console.error("Error fetching programas:", e);
+    res.status(500).json({ error: e.message });
+  }
 });
+
 app.get("/api/catalogos/tipos-participacion", async (_req, res) => {
-  res.json(await prisma.tipos_participacion.findMany({ orderBy: { id: "asc" } }));
+  try {
+    const data = await prisma.tipos_participacion.findMany({ orderBy: { id: "asc" } });
+    res.status(200).json(data);
+  } catch (e) {
+    console.error("Error fetching tipos-participacion:", e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Archivos subidos (p.ej. /uploads/solicitudes/<id>/<archivo>)
@@ -88,6 +93,12 @@ app.use(
   requireRole("ADMIN"),
   usuariosRouter(prisma)
 );
+
+// Error handler
+app.use((err, _req, res, _next) => {
+  console.error("❌ Unhandled error:", err);
+  res.status(500).json({ error: err.message });
+});
 
 const port = process.env.PORT || 4000;
 
