@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     nombre TEXT NOT NULL,
     correo CITEXT UNIQUE NOT NULL CHECK (position('@' in correo) > 1),
+    telefono TEXT,
     contrasena_hash TEXT NOT NULL,
     rol USER_ROLE NOT NULL DEFAULT 'DOCENTE',
     verificado BOOLEAN NOT NULL DEFAULT FALSE,
@@ -41,6 +42,10 @@ CREATE TABLE IF NOT EXISTS usuarios (
 );
 CREATE INDEX IF NOT EXISTS idx_usuarios_correo ON usuarios(correo);
 CREATE INDEX IF NOT EXISTS idx_usuarios_rol ON usuarios(rol);
+
+-- Asegurar columna telefono en despliegues incrementales
+ALTER TABLE IF NOT EXISTS usuarios
+    ADD COLUMN IF NOT EXISTS telefono TEXT;
 
 CREATE TABLE IF NOT EXISTS email_verifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
