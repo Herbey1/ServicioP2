@@ -112,7 +112,7 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: err.message });
 });
 
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 3000;
 
 const server = app.listen(port, '0.0.0.0', () => {
   console.log(`✅ API started on http://0.0.0.0:${port}`);

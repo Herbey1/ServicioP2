@@ -16,10 +16,10 @@ COPY backend/prisma ./prisma
 # Generar cliente Prisma
 RUN npx prisma generate
 
-# Exponer puerto 4000
-EXPOSE 4000
+# Exponer puerto 3000 (Railway lo mapea automáticamente)
+EXPOSE 3000
 
-# Iniciar directamente con node, no con npm
+# Iniciar directamente con node
 CMD ["node", "src/index.js"]
 
 
