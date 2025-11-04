@@ -16,13 +16,10 @@ COPY backend/prisma ./prisma
 # Generar cliente Prisma
 RUN npx prisma generate
 
-# Exponer puerto 4000 (Railway lo mapeará automáticamente)
+# Exponer puerto 4000
 EXPOSE 4000
-
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4000/', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
 # Iniciar - asegurarse de que escuche en 0.0.0.0
 CMD ["npm", "start"]
+
 
