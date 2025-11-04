@@ -116,12 +116,14 @@ const port = process.env.PORT || 4000;
 
 const server = app.listen(port, '0.0.0.0', () => {
   console.log(`✅ API started on http://0.0.0.0:${port}`);
+  console.log(`process.env.PORT: ${process.env.PORT}`);
+  console.log(`Listening on port: ${port}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`DATABASE_URL configured: ${process.env.DATABASE_URL ? 'yes' : 'NO - THIS IS A PROBLEM'}`);
   
   // Log heartbeat every 10 seconds so Railway knows the app is alive
   setInterval(() => {
-    console.log(`[${new Date().toISOString()}] ❤️  Heartbeat - Server is alive`);
+    console.log(`[${new Date().toISOString()}] ❤️  Heartbeat - Server is alive on port ${port}`);
   }, 10000);
 });
 
