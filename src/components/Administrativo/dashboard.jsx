@@ -24,6 +24,24 @@ const isDateInRange = (value, { desde, hasta }) => {
   return true;
 };
 
+const formatDateOnly = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") return value.slice(0, 10);
+  try { return value.toISOString().slice(0, 10); } catch { return ""; }
+};
+
+const formatTimeOnly = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (!Number.isNaN(date.getTime())) {
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  }
+  if (typeof value === "string" && value.length >= 16) {
+    return value.slice(11, 16);
+  }
+  return "";
+};
+
 const mapSolicitudItem = (item) => {
   const estadoMap = {
     EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
@@ -32,16 +50,25 @@ const mapSolicitudItem = (item) => {
     DEVUELTA: { tab: 'Devueltas', status: 'Devuelta' }
   };
   const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
+  // intentar resolver un texto para el tipo de participación (si viene como texto alterno)
+  const tipoParticipacion = item.tipo_participacion_otro ?? (item.tipo_participacion_id ? String(item.tipo_participacion_id) : "");
   return {
     id: item.id,
-    titulo: item.asunto,
+    titulo: item.asunto || "",
     solicitante: item.usuarios?.nombre || item.docente_id,
-    fechaSalida: item.fecha_salida?.slice(0,10) || "",
+    ciudad: item.ciudad || "",
+    pais: item.pais || "",
+    fechaSalida: formatDateOnly(item.fecha_salida),
+    fechaRegreso: formatDateOnly(item.fecha_regreso),
+    horaSalida: formatTimeOnly(item.hora_salida),
+    horaRegreso: formatTimeOnly(item.hora_regreso),
+    tipoParticipacion: tipoParticipacion,
     status: map.status,
     tab: map.tab,
     ultimoCambioFecha: item.last_change_at ? new Date(item.last_change_at).toLocaleString() : undefined,
     ultimoCambioActor: item.last_change_by || undefined,
-    historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined
+    historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined,
+    comentariosAdmin: item.motivo_estado ?? undefined
   };
 };
 
@@ -72,7 +99,18 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   const navigate = useNavigate()
   const { darkMode } = useTheme();
   const { showToast } = useToast();
-  const [activeSection, setActiveSection] = useState("Comisiones")      // "Comisiones" | "Reportes" | "Usuarios"
+  // Persistir sección activa en localStorage para que al recargar la página no vuelva al dashboard
+  const [activeSection, setActiveSectionRaw] = useState(() => {
+    try {
+      return localStorage.getItem('sgca_active_section') || 'Comisiones'
+    } catch {
+      return 'Comisiones'
+    }
+  })
+  const setActiveSection = (v) => {
+    try { localStorage.setItem('sgca_active_section', v) } catch {}
+    setActiveSectionRaw(v)
+  }
   const tabsComisiones = ["Pendientes", "Aprobadas", "Rechazadas", "Devueltas"]
   const tabsReportes   = ["Pendientes", "Aprobados", "Rechazados", "Devueltos"]
   const [activeTabComisiones, setActiveTabComisiones] = useState("Pendientes")
@@ -105,7 +143,8 @@ export default function AdminDashboard({ setIsAuthenticated }) {
       setLoadingSolicitudes(true)
       const resp = await apiFetch('/api/solicitudes');
       const grouped = { Pendientes: [], Aprobadas: [], Rechazadas: [], Devueltas: [] };
-      (resp.items || []).forEach(item => {
+      const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
+      items.forEach(item => {
         const mapped = mapSolicitudItem(item);
         grouped[mapped.tab].push(mapped);
       });
@@ -148,11 +187,20 @@ export default function AdminDashboard({ setIsAuthenticated }) {
 
   const changeEstado = async (id, estado, motivo) => {
     try {
-      await apiFetch(`/api/solicitudes/${id}/estado`, {
+      const resp = await apiFetch(`/api/solicitudes/${id}/estado`, {
         method: 'PATCH',
         body: { estado, motivo }
       })
-      return true
+      if (resp && resp.ok) {
+        // Notificar a otras pestañas en el mismo navegador que hubo un cambio
+        try { localStorage.setItem('sgca_solicitudes_update', Date.now().toString()); } catch (e) { /* noop */ }
+        return true
+      }
+      // Mostrar mensaje de error detallado si el servidor lo proporciona
+      console.error('Error cambiando estado, respuesta no OK', resp)
+      const msg = resp?.data?.msg || resp?.data?.message || `Error: ${resp?.status || 'unknown'}`;
+      showToast(msg || 'No se pudo cambiar el estado', { type: 'error' })
+      return false
     } catch (e) {
       console.error('Error cambiando estado', e)
       showToast('No se pudo cambiar el estado', { type: 'error' })
@@ -160,16 +208,55 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     }
   }
 
+  // Obtener estado actual del recurso para validar antes de transicionar
+  const getSolicitudEstado = async (id) => {
+    try {
+      const resp = await apiFetch(`/api/solicitudes/${id}`);
+      if (!resp.ok) return { ok: false };
+      return { ok: true, estado: resp?.data?.estado };
+    } catch (e) {
+      return { ok: false };
+    }
+  }
+
   const approveRequest = async (tab, index, comments) => {
     const sol = solicitudesPorTab[tab][index]
-    if (!await changeEstado(sol.id, 'APROBADA', comments)) return
+    const current = await getSolicitudEstado(sol.id)
+    if (!current.ok) {
+      await loadSolicitudes()
+      showToast('No se pudo verificar el estado actual', { type: 'error' })
+      return
+    }
+    if (current.estado && current.estado !== 'EN_REVISION') {
+      await loadSolicitudes()
+      showToast(`No se puede aprobar: estado actual = ${current.estado}`, { type: 'error' })
+      return
+    }
+    if (!await changeEstado(sol.id, 'APROBADA', comments)) {
+      await loadSolicitudes()
+      return
+    }
     await loadSolicitudes()
     setActiveTabComisiones("Aprobadas")
   }
 
   const rejectRequest = async (tab, index, comments) => {
     const sol = solicitudesPorTab[tab][index]
-    if (!await changeEstado(sol.id, 'RECHAZADA', comments)) return
+    const current = await getSolicitudEstado(sol.id)
+    if (!current.ok) {
+      await loadSolicitudes()
+      showToast('No se pudo verificar el estado actual', { type: 'error' })
+      return
+    }
+    if (current.estado && current.estado !== 'EN_REVISION') {
+      await loadSolicitudes()
+      showToast(`No se puede rechazar: estado actual = ${current.estado}`, { type: 'error' })
+      return
+    }
+    if (!await changeEstado(sol.id, 'RECHAZADA', comments)) {
+      await loadSolicitudes()
+      return
+    }
     moveSolicitud(tab, "Rechazadas", index, {
       status: "Rechazada",
       comentariosAdmin: comments
@@ -179,7 +266,21 @@ export default function AdminDashboard({ setIsAuthenticated }) {
 
   const returnRequest = async (tab, index, comments) => {
     const sol = solicitudesPorTab[tab][index]
-    if (!await changeEstado(sol.id, 'DEVUELTA', comments)) return
+    const current = await getSolicitudEstado(sol.id)
+    if (!current.ok) {
+      await loadSolicitudes()
+      showToast('No se pudo verificar el estado actual', { type: 'error' })
+      return
+    }
+    if (current.estado && current.estado !== 'EN_REVISION') {
+      await loadSolicitudes()
+      showToast(`No se puede devolver: estado actual = ${current.estado}`, { type: 'error' })
+      return
+    }
+    if (!await changeEstado(sol.id, 'DEVUELTA', comments)) {
+      await loadSolicitudes()
+      return
+    }
     moveSolicitud(tab, "Devueltas", index, {
       status: "Devuelta",
       comentariosAdmin: comments
@@ -202,7 +303,8 @@ export default function AdminDashboard({ setIsAuthenticated }) {
       setLoadingReportes(true)
       const resp = await apiFetch('/api/reportes'); 
       const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
-      (resp.items || []).forEach(item => {
+      const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
+      items.forEach(item => {
         const mapped = mapReporteItem(item);
         grouped[mapped.tab].push(mapped);
       });
@@ -289,10 +391,9 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     const payload = {
       nombre: (nombre || '').trim(),
       correo: (correo || '').trim(),
-      rol,
-      password: password?.trim()
+      rol
     }
-    if (!payload.nombre || !payload.correo || !payload.password) return
+    if (!payload.nombre || !payload.correo) return
 
     try {
       setAddingDocente(true)
@@ -472,7 +573,9 @@ export default function AdminDashboard({ setIsAuthenticated }) {
             : setActiveTabReportes
         }
         tabs={activeSection === "Comisiones" ? tabsComisiones : tabsReportes}
-        onAddDocenteClick={() => setShowAddDocente(true)}
+  onAddDocenteClick={() => setShowAddDocente(true)}
+  onRefreshComisiones={loadSolicitudes}
+  onRefreshReportes={loadReportes}
         disableAddDocenteButton={addingDocente}
         solicitudesActivas={solicitudesActivas}
         reportesActivos={reportesActivos}
@@ -516,6 +619,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         handleChangeUserRole={handleChangeUserRole}
         handleToggleUserActive={handleToggleUserActive}
         handleDeleteUser={handleDeleteUser}
+        onUploadUsers={loadUsuarios}
         userActionId={userActionId}
         deletingUserId={deletingUserId}
       />

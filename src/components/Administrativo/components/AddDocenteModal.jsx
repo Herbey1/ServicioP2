@@ -11,8 +11,7 @@ export default function AddDocenteModal({ isOpen, onClose, onSubmit, submitting 
   const [nombreTouched, setNombreTouched] = useState(false)
   const [correoTouched, setCorreoTouched] = useState(false)
   const [rol, setRol] = useState('DOCENTE')
-  const [password, setPassword] = useState('')
-  const [passwordTouched, setPasswordTouched] = useState(false)
+  
 
   useEffect(() => {
     if (isOpen) {
@@ -21,8 +20,6 @@ export default function AddDocenteModal({ isOpen, onClose, onSubmit, submitting 
       setNombreTouched(false)
       setCorreoTouched(false)
       setRol('DOCENTE')
-      setPassword('')
-      setPasswordTouched(false)
     }
   }, [isOpen])
 
@@ -30,8 +27,6 @@ export default function AddDocenteModal({ isOpen, onClose, onSubmit, submitting 
     const trimmedName = nombre.trim()
     const trimmedEmail = correo.trim()
     const emailRegex = /^[A-Z0-9._%+-]+@uabc\.edu\.mx$/i
-    const trimmedPassword = password.trim()
-
     return {
       nombre: !trimmedName ? "Ingrese el nombre del usuario" : null,
       correo: !trimmedEmail
@@ -39,12 +34,9 @@ export default function AddDocenteModal({ isOpen, onClose, onSubmit, submitting 
         : emailRegex.test(trimmedEmail)
           ? null
           : "El correo debe ser @uabc.edu.mx",
-      password:
-        trimmedPassword.length < 8
-          ? "La contraseña debe tener al menos 8 caracteres"
-          : null
+      // Nota: no se solicita contraseña; a los docentes se les asigna la contraseña por defecto y deberán cambiarla al entrar
     }
-  }, [nombre, correo, password])
+  }, [nombre, correo])
 
   if (!isOpen) return null
 
@@ -52,16 +44,16 @@ export default function AddDocenteModal({ isOpen, onClose, onSubmit, submitting 
     event.preventDefault()
     setNombreTouched(true)
     setCorreoTouched(true)
-    setPasswordTouched(true)
 
-    if (validation.nombre || validation.correo || validation.password) {
+    if (validation.nombre || validation.correo) {
       return
     }
 
-    onSubmit({ nombre: nombre.trim(), correo: correo.trim(), rol, password: password.trim() })
+    // No enviamos contraseña: backend asignará 'docente' por defecto para rol DOCENTE
+    onSubmit({ nombre: nombre.trim(), correo: correo.trim(), rol })
   }
 
-  const disableSubmit = submitting || Boolean(validation.nombre || validation.correo || validation.password)
+  const disableSubmit = submitting || Boolean(validation.nombre || validation.correo)
 
   const handleOverlayClick = () => {
     if (!submitting) onClose()
@@ -112,24 +104,7 @@ export default function AddDocenteModal({ isOpen, onClose, onSubmit, submitting 
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="password-usuario">
-                Contraseña temporal
-              </label>
-              <input
-                id="password-usuario"
-                type="text"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                onBlur={() => setPasswordTouched(true)}
-                className={inputClasses}
-                placeholder="Mínimo 8 caracteres"
-                disabled={submitting}
-              />
-              {passwordTouched && validation.password && (
-                <p className="mt-1 text-sm text-red-500">{validation.password}</p>
-              )}
-            </div>
+            {/* Contraseña no requerida aquí. A los docentes se les asigna contraseña por defecto y deberán cambiarla al iniciar sesión. */}
           </div>
 
           <div>

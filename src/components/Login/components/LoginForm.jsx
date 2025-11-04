@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 export default function LoginForm({ 
   email, 
@@ -6,7 +7,8 @@ export default function LoginForm({
   password, 
   setPassword, 
   handleSubmit,
-  errorMessage 
+  errorMessage,
+  isLoading
 }) {
   const canSubmit = email.trim().length > 0 && password.trim().length > 0;
 
@@ -38,7 +40,7 @@ export default function LoginForm({
           placeholder="Ingresa tu contraseña"
         />
         <div className="text-right mt-1">
-          <a href="#" className="text-gray-500 text-sm">¿Olvidaste tu contraseña?</a>
+          <Link to="/forgot-password" className="text-gray-500 text-sm">¿Olvidaste tu contraseña?</Link>
         </div>
       </div>
 
@@ -50,15 +52,21 @@ export default function LoginForm({
 
       <button
         type="submit"
-        disabled={!canSubmit}
+        disabled={!canSubmit || isLoading}
         className={`w-full py-3 rounded-md font-medium mt-4 transition-colors ${
-          canSubmit
+          canSubmit && !isLoading
             ? 'bg-green-700 text-white hover:bg-green-800 cursor-pointer'
             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
         }`}
       >
-        Iniciar sesión
+        {isLoading ? 'Iniciando...' : 'Iniciar sesión'}
       </button>
+
+      <div className="text-center mt-3">
+        <Link to="/contacto" className="text-sm text-green-700 font-medium hover:underline">
+          ¿Necesitas ayuda? Contáctanos
+        </Link>
+      </div>
     </form>
   );
 }

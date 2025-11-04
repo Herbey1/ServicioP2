@@ -9,6 +9,7 @@ export default function Header({
   isAdmin = false,
   title = "",
   onAddDocenteClick,
+  onRefreshComisiones,
   disableAddDocente = false,
   searchValue = "",
   onSearchChange = () => {},
@@ -29,6 +30,7 @@ export default function Header({
             <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-700'}`}>
               {title}
             </h1>
+            {/* refresh button removed: refresh controls live in MainContent per-section */}
             {canShowSearch && (
               <input
                 type="search"

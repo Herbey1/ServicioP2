@@ -25,6 +25,7 @@ import EditReporteModal     from "./components/EditReporteModal"
 
 /* Perfil */
 import ProfileSection      from "./components/ProfileSection"
+import ChangePasswordModal from "./components/ChangePasswordModal"
 
 /* Logout */
 import LogoutConfirmModal  from "./components/LogoutConfirmModal"
@@ -114,6 +115,9 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   const [activeSection, setActiveSection] = useState("Comisiones") // Comisiones | Reportes | Perfil
   const [sidebarOpen,   setSidebarOpen]   = useState(false)
   const [showLogout,    setShowLogout]    = useState(false)
+  const [showForceChangePwd, setShowForceChangePwd] = useState(() => {
+    try { return Boolean(localStorage.getItem('mustChangePassword')); } catch { return false }
+  })
 
   const toggleSidebar   = () => setSidebarOpen(!sidebarOpen)
   const confirmLogout   = () => setShowLogout(true)
@@ -239,6 +243,25 @@ export default function DashboardDocente({ setIsAuthenticated }) {
 
   useEffect(() => {
     loadSolicitudes();
+  }, [loadSolicitudes]);
+
+  useEffect(() => {
+    // Si el login marcó que el usuario debe cambiar contraseña, mostramos el modal
+    try {
+      const flag = Boolean(localStorage.getItem('mustChangePassword'))
+      if (flag) setShowForceChangePwd(true)
+    } catch {}
+  }, [])
+
+  // Escuchar cambios en localStorage para sincronizar entre pestañas (ej. admin aprueba)
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === 'sgca_solicitudes_update') {
+        loadSolicitudes();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, [loadSolicitudes]);
 
   const fetchSolicitudDetalle = useCallback(async (solicitudId) => {
@@ -390,12 +413,13 @@ export default function DashboardDocente({ setIsAuthenticated }) {
     }
   }
 
-  const openEditSolicitud = useCallback(async (solicitud, index, tab) => {
+  const openEditSolicitud = useCallback(async (solicitud, index, tab, viewOnly = false) => {
     if (!solicitud?.id) return;
     setModalEditData({
       ...solicitud,
       index,
       tab,
+      viewOnly: !!viewOnly,
       archivos: Array.isArray(solicitud.archivos) ? solicitud.archivos : [],
       loading: true
     });
@@ -403,7 +427,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       const detalle = await fetchSolicitudDetalle(solicitud.id);
       setModalEditData(prev => {
         if (!prev || prev.id !== solicitud.id) return prev;
-        return { ...detalle, index, tab };
+        return { ...detalle, index, tab, viewOnly: !!prev.viewOnly };
       });
     } catch (e) {
       console.error('Error cargando detalle de la solicitud', e);
@@ -596,10 +620,11 @@ export default function DashboardDocente({ setIsAuthenticated }) {
         const estadoMap = {
           EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
           APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-          RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
+          RECHAZO: { tab: 'Rechazados', status: 'Rechazado' },
           DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
         };
-        (resp.items || []).forEach(item => {
+        const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
+        items.forEach(item => {
           const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
           grouped[map.tab].push({
             id: item.id,
@@ -644,10 +669,11 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       const estadoMap = {
         EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
         APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-        RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
+        RECHAZO: { tab: 'Rechazados', status: 'Rechazado' },
         DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
       };
-      (resp.items || []).forEach(item => {
+      const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
+      items.forEach(item => {
         const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
         grouped[map.tab].push({
           id: item.id,
@@ -851,8 +877,8 @@ export default function DashboardDocente({ setIsAuthenticated }) {
                     solicitud={solicitud}
                     index={i}
                     statusColors={statusColors}
-                    handleEditClick={(selectedSolicitud, selectedIndex) =>
-                      openEditSolicitud(selectedSolicitud, selectedIndex, activeTabComisiones)
+                    handleEditClick={(selectedSolicitud, selectedIndex, viewOnly = false) =>
+                      openEditSolicitud(selectedSolicitud, selectedIndex, activeTabComisiones, viewOnly)
                     }
                   />
                 ))
@@ -932,8 +958,8 @@ export default function DashboardDocente({ setIsAuthenticated }) {
                     reporte={reporte}
                     index={i}
                     statusColors={statusColors}
-                    handleEdit={() =>
-                      setModalEditReporte({ ...reporte, index: i, tab: activeTabReportes })
+                    handleEdit={(r, idx, viewOnly = false) =>
+                      setModalEditReporte({ ...r, index: idx, tab: activeTabReportes, viewOnly: !!viewOnly })
                     }
                   />
                 ))
@@ -973,6 +999,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       {modalEditData && (
         <EditSolicitudModal
           modalEditData={modalEditData}
+          viewOnly={modalEditData.viewOnly}
           setModalEditData={setModalEditData}
           handleSaveEdit={handleSaveEditSolicitud}
           handleDeleteClick={() => setShowDeleteConfirm(true)}
@@ -1004,6 +1031,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       {modalEditReporte && (
         <EditReporteModal
           modalData={modalEditReporte}
+          viewOnly={modalEditReporte.viewOnly}
           setModalData={setModalEditReporte}
           guardarCambios={handleSaveEditReporte}
           eliminar={handleDeleteReporte}
@@ -1015,6 +1043,12 @@ export default function DashboardDocente({ setIsAuthenticated }) {
         showLogoutConfirm={showLogout}
         cancelLogout={cancelLogout}
         handleLogout={handleLogout}
+      />
+
+      <ChangePasswordModal
+        open={showForceChangePwd}
+        close={() => { setShowForceChangePwd(false); try { localStorage.removeItem('mustChangePassword') } catch {} }}
+        onSuccess={() => { try { localStorage.removeItem('mustChangePassword') } catch {} }}
       />
       </ErrorBoundary>
     </div>

@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react"
 import PropTypes from "prop-types"
 import { useTheme } from "../../../context/ThemeContext"
+import { apiFetch } from '../../../api/client'
 
-export default function ChangePasswordModal({ open, close }) {
+export default function ChangePasswordModal({ open, close, onSuccess }) {
   const { darkMode } = useTheme();
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -54,22 +55,18 @@ export default function ChangePasswordModal({ open, close }) {
     setError("");
     setSuccess("");
     try {
-      const token = localStorage.getItem('token');
-      const resp = await fetch('/api/auth/change-password', {
+      const resp = await apiFetch('/api/auth/change-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ currentPassword, newPassword })
+        body: { currentPassword, newPassword }
       });
-      const data = await resp.json().catch(() => null);
+      const data = resp.data ?? null;
       if (!resp.ok || !data?.ok) {
         setError(data?.msg || 'No se pudo cambiar la contraseña');
         setProcessing(false);
         return;
       }
       setSuccess('Contraseña actualizada con éxito');
+      if (typeof onSuccess === 'function') onSuccess();
       setTimeout(() => { close(); }, 900);
     } catch (e) {
       setError('Error de red al cambiar la contraseña');

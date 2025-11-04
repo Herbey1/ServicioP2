@@ -14,6 +14,8 @@ export default function MainContent({
   activeTab,     setActiveTab,
   tabs,
   onAddDocenteClick,
+  onRefreshComisiones,
+  onRefreshReportes,
   disableAddDocenteButton = false,
   /* Datos */
   solicitudesActivas,
@@ -43,6 +45,7 @@ export default function MainContent({
   handleChangeUserRole,
   handleToggleUserActive,
   handleDeleteUser,
+  onUploadUsers,
   userActionId,
   deletingUserId
 }) {
@@ -64,6 +67,7 @@ export default function MainContent({
         isAdmin
         title="Panel de Administración"
         onAddDocenteClick={activeSection === "Usuarios" ? null : onAddDocenteClick}
+        onRefreshComisiones={onRefreshComisiones}
         disableAddDocente={disableAddDocenteButton}
         searchValue={searchValue}
         onSearchChange={onSearchChange}
@@ -73,8 +77,22 @@ export default function MainContent({
 
       {activeSection === "Comisiones" && (
         <div className="flex flex-wrap items-end justify-between gap-4 mb-3 w-full">
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-2xl font-bold flex items-center gap-3">
             Solicitudes de comisiones
+            <button
+              type="button"
+              onClick={onRefreshComisiones}
+              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+              title="Refrescar comisiones"
+              aria-label="Refrescar comisiones"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.13-3.36L23 10"></path>
+                <path d="M20.49 15a9 9 0 0 1-14.13 3.36L1 14"></path>
+              </svg>
+            </button>
           </h2>
           <div className="flex items-end gap-4">
             <div className="flex flex-col">
@@ -110,8 +128,22 @@ export default function MainContent({
 
       {activeSection === "Reportes" && (
         <div className="flex flex-wrap items-end justify-between gap-4 mb-3 w-full">
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-2xl font-bold flex items-center gap-3">
             Reportes académicos
+            <button
+              type="button"
+              onClick={onRefreshReportes}
+              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+              title="Refrescar reportes"
+              aria-label="Refrescar reportes"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.13-3.36L23 10"></path>
+                <path d="M20.49 15a9 9 0 0 1-14.13 3.36L1 14"></path>
+              </svg>
+            </button>
           </h2>
           <div className="flex items-end gap-4">
             <div className="flex flex-col">
@@ -179,6 +211,7 @@ export default function MainContent({
           deletingUserId={deletingUserId}
           onAddUser={onAddDocenteClick}
           addingUser={disableAddDocenteButton}
+          onUploadComplete={onUploadUsers}
         />
       )}
     </div>

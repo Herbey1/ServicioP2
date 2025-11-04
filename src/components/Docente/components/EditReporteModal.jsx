@@ -2,12 +2,14 @@
 
 import PropTypes from "prop-types"
 import { useEffect, useRef, useState } from "react"
+import { useTheme } from "../../../context/ThemeContext"
 
 export default function EditReporteModal({
   modalData,          // { …reporte, tab, index }  o null
   setModalData,
   guardarCambios,
-  eliminar
+  eliminar,
+  viewOnly = false
 }) {
   const fileInputRef = useRef(null)
   const [formData, setFormData] = useState(null)
@@ -18,6 +20,12 @@ export default function EditReporteModal({
   }, [modalData])
 
   if (!modalData || !formData) return null
+  const { darkMode } = useTheme();
+  const isReadOnly = !!viewOnly
+
+  const inputBase = `w-full rounded-lg px-3 py-2 border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`;
+  const textareaBase = inputBase;
+  const labelClass = `${darkMode ? 'text-gray-200' : 'text-gray-700'}`;
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -32,13 +40,13 @@ export default function EditReporteModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white w-full max-w-3xl rounded-xl p-8 shadow-lg max-h-[90vh] overflow-y-auto">
+      <div className={`${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} w-full max-w-3xl rounded-xl p-8 shadow-lg max-h-[90vh] overflow-y-auto`}>
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 border-b pb-3">
-          <h2 className="text-xl font-bold">Editar reporte</h2>
+        <div className={`flex justify-between items-center mb-6 border-b pb-3 ${darkMode ? 'border-gray-700' : ''}`}>
+          <h2 className="text-xl font-bold">{viewOnly ? 'Ver reporte' : 'Editar reporte'}</h2>
           <button
             onClick={handleClose}
-            className="text-gray-500 hover:text-gray-700"
+            className={`${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
             aria-label="Cerrar"
           >
             ×
@@ -62,7 +70,7 @@ export default function EditReporteModal({
         <div className="grid grid-cols-1 gap-6">
           {/* Título */}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className={`block text-sm font-medium mb-1 ${labelClass}`}>
               Asunto de la comisión <span className="text-red-600">*</span>
             </label>
             <input
@@ -70,14 +78,15 @@ export default function EditReporteModal({
               name="titulo"
               value={formData.titulo}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              className={inputBase}
               required
+              disabled={isReadOnly}
             />
           </div>
 
           {/* Descripción */}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className={`block text-sm font-medium mb-1 ${labelClass}`}>
               Descripción / Resultados <span className="text-red-600">*</span>
             </label>
             <textarea
@@ -85,14 +94,15 @@ export default function EditReporteModal({
               rows="4"
               value={formData.descripcion}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              className={textareaBase}
               required
+              disabled={isReadOnly}
             ></textarea>
           </div>
 
           {/* Fecha */}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className={`block text-sm font-medium mb-1 ${labelClass}`}>
               Fecha de entrega <span className="text-red-600">*</span>
             </label>
             <input
@@ -100,14 +110,15 @@ export default function EditReporteModal({
               name="fechaEntrega"
               value={formData.fechaEntrega}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              className={inputBase}
               required
+              disabled={isReadOnly}
             />
           </div>
 
           {/* Evidencia */}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className={`block text-sm font-medium mb-1 ${labelClass}`}>
               Evidencia (PDF o ZIP)
             </label>
             <input
@@ -115,36 +126,43 @@ export default function EditReporteModal({
               accept=".pdf,.zip"
               ref={fileInputRef}
               onChange={handleFileChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              className={inputBase}
+              disabled={isReadOnly}
             />
           </div>
         </div>
 
         {/* Botones */}
-        <div className="mt-8 flex justify-between">          <button
-            onClick={() => {
-              if (window.confirm("¿Eliminar este reporte?")) eliminar()
-            }}
-            className="px-5 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium"
-          >
-            Eliminar
-          </button>
+        <div className="mt-8 flex justify-between">
+          {!viewOnly && (
+            <button
+              onClick={() => {
+                if (window.confirm("¿Eliminar este reporte?")) eliminar()
+              }}
+              className="px-5 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium"
+            >
+              Eliminar
+            </button>
+          )}
 
           <div className="flex gap-4">
             <button
               onClick={handleClose}
-              className="px-5 py-2 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium"
+              className={`${darkMode ? 'px-5 py-2 rounded-full bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium' : 'px-5 py-2 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium'}`}
             >
               Cancelar
             </button>
-            <button
-              onClick={() => {
-                guardarCambios(formData)
-              }}
-              className="px-5 py-2 rounded-full bg-green-700 hover:bg-green-800 text-white text-sm font-medium"
-            >
-              Guardar
-            </button>
+
+            {!viewOnly && (
+              <button
+                onClick={() => {
+                  guardarCambios(formData)
+                }}
+                className="px-5 py-2 rounded-full bg-green-700 hover:bg-green-800 text-white text-sm font-medium"
+              >
+                Guardar
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -1,4 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
+// Ensure an empty string VITE_API_URL doesn't produce a relative URL.
+const rawApiUrl = import.meta.env.VITE_API_URL;
+const API_URL = (typeof rawApiUrl === 'string' && rawApiUrl.trim().length > 0) ? rawApiUrl.trim() : 'http://localhost:4000';
 
 export async function apiFetch(path, { method = 'GET', headers = {}, body, token } = {}) {
   const opts = { method, headers: { ...headers } };

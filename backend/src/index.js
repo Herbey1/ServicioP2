@@ -13,31 +13,79 @@ import usuariosRouter from "./routes/usuarios.js";
 
 dotenv.config();
 const app = express();
-const prisma = new PrismaClient();
 
-
+// Inicializar Prisma con manejo de error
+let prisma;
+try {
+  prisma = new PrismaClient();
+  console.log("✅ Prisma initialized");
+} catch (e) {
+  console.error("❌ Failed to initialize Prisma:", e);
+  prisma = null;
+}
 
 // === ruta absoluta a /uploads
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const UPLOAD_ROOT = path.join(__dirname, "..", "uploads");
 
+// CORS Configuration - permisivo en producción
 app.use(cors());
 app.use(express.json());
 app.use("/api/perfil", requireAuth, perfilRouter(prisma));
 
+// Root endpoint - simplest possible
+app.get("/", (_req, res) => {
+  res.status(200).json({ 
+    ok: true, 
+    message: "Backend is alive",
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Health
 app.get("/api/health", async (_req, res) => {
-  try { await prisma.$queryRaw`SELECT 1`; res.json({ ok: true }); }
-  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  try { 
+    if (!prisma) {
+      return res.status(500).json({ ok: false, message: "Prisma not available" }); 
+    }
+    await prisma.$queryRaw`SELECT 1`; 
+    res.status(200).json({ ok: true, message: "Backend is healthy" }); 
+  }
+  catch (e) { 
+    console.error("Health check failed:", e);
+    res.status(503).json({ ok: false, error: e.message }); 
+  }
+});
+
+// Test endpoint
+app.get("/api/test", (_req, res) => {
+  res.status(200).json({ 
+    ok: true, 
+    message: "Backend is reachable",
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Catálogos de ejemplo 
 app.get("/api/catalogos/programas", async (_req, res) => {
-  res.json(await prisma.programas_educativos.findMany({ orderBy: { id: "asc" } }));
+  try {
+    const data = await prisma.programas_educativos.findMany({ orderBy: { id: "asc" } });
+    res.status(200).json(data);
+  } catch (e) {
+    console.error("Error fetching programas:", e);
+    res.status(500).json({ error: e.message });
+  }
 });
+
 app.get("/api/catalogos/tipos-participacion", async (_req, res) => {
-  res.json(await prisma.tipos_participacion.findMany({ orderBy: { id: "asc" } }));
+  try {
+    const data = await prisma.tipos_participacion.findMany({ orderBy: { id: "asc" } });
+    res.status(200).json(data);
+  } catch (e) {
+    console.error("Error fetching tipos-participacion:", e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Archivos subidos (p.ej. /uploads/solicitudes/<id>/<archivo>)
@@ -60,5 +108,38 @@ app.use(
   usuariosRouter(prisma)
 );
 
-const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`API on http://localhost:${port}`));
+// Error handler
+app.use((err, _req, res, _next) => {
+  console.error("❌ Unhandled error:", err);
+  res.status(500).json({ error: err.message });
+});
+
+const port = process.env.PORT || 3000;
+
+const server = app.listen(port, '0.0.0.0', () => {
+  console.log(`✅ API started on http://0.0.0.0:${port}`);
+  console.log(`process.env.PORT: ${process.env.PORT}`);
+  console.log(`Listening on port: ${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`DATABASE_URL configured: ${process.env.DATABASE_URL ? 'yes' : 'NO - THIS IS A PROBLEM'}`);
+  
+  // Log heartbeat every 10 seconds so Railway knows the app is alive
+  setInterval(() => {
+    console.log(`[${new Date().toISOString()}] ❤️  Heartbeat - Server is alive on port ${port}`);
+  }, 10000);
+});
+
+// Handle errors
+server.on('error', (err) => {
+  console.error('❌ Server error:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('❌ Unhandled rejection:', err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught exception:', err);
+  process.exit(1);
+});
