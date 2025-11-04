@@ -94,6 +94,7 @@ const port = process.env.PORT || 4000;
 const server = app.listen(port, '0.0.0.0', () => {
   console.log(`✅ API started on http://0.0.0.0:${port}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`DATABASE_URL configured: ${process.env.DATABASE_URL ? 'yes' : 'NO - THIS IS A PROBLEM'}`);
 });
 
 // Handle errors
