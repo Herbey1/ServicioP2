@@ -48,6 +48,8 @@ services:
     networks:
       - sgca_network
     env_file: .env
+    environment:
+      PORT: "4000"
     ports:
       - "4000:4000"
     depends_on:

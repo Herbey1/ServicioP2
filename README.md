@@ -2,6 +2,8 @@
 
 Este proyecto permite levantar un entorno completo con base de datos, backend y frontend para el Sistema de Gestión de Comisiones Académicas (SGCA).
 
+> **Análisis de despliegue:** Para un análisis detallado de si el proyecto está listo para producción y qué corregir, ver [ANALISIS_DESPLIEGUE.md](./ANALISIS_DESPLIEGUE.md).
+
 ## Requisitos previos
 
 - **Docker** y **Docker Compose** instalados.
@@ -25,13 +27,14 @@ cd ServicioP2
    ```bash
    cp .env.example .env
    ```
-2. Si lo deseas, edita `.env` para ajustar:
+2. Edita `.env` y asegúrate de tener:
    - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `PGPORT`
-   - `JWT_SECRET`
-   - `VITE_API_URL` (por defecto `http://backend:4000` para Docker)
+   - **`DATABASE_URL`** (obligatorio): `postgresql://USER:PASSWORD@db:5432/DB` con los mismos valores
+   - `JWT_SECRET` (en producción usa un secreto fuerte)
+   - **`VITE_API_URL`**: para acceso por navegador con Docker usa `http://localhost:4000`; en producción la URL pública del API
 
    Si ejecutas el frontend directamente con `npm run dev`, crea un `.env.local` con
-   `VITE_API_URL=http://localhost:4000` para seguir apuntando al backend local.
+   `VITE_API_URL=http://localhost:4000` para apuntar al backend local.
 
 ---
 
@@ -71,12 +74,9 @@ Esto construirá y arrancará tres contenedores:
 - **Frontend:** <http://localhost:3000>
 - **Backend (API):** <http://localhost:4000>
 - **Base de datos:** `postgresql://sgca_user:sgca_password_123@localhost:PGPORT/sgca`
-- **Credenciales de ejemplo** (solo para desarrollo):
-  - Usuario: `admin@uabc.edu.mx`
-  - Password: `WkdbdY45LFtvoBdhfcGkGQ`
-
-  - Usuario: `docente@uabc.edu.mx`
-  - Password: `Docente123!`
+- **Credenciales de ejemplo** (solo para desarrollo; cámbialas en producción):
+  - Usuario: `admin@uabc.edu.mx` / Password: `WkdbdY45LFtvoBdhfcGkGQ`
+  - Usuario: `docente@uabc.edu.mx` / Password: `Docente123!`
 
 ---
 
@@ -93,7 +93,17 @@ docker compose down
 
 ---
 
-## 7. (Opcional) Ejecutar solo la base de datos
+## 7. Despliegue en producción
+
+Antes de desplegar en un servidor o plataforma (VPS, Railway, etc.):
+
+- Revisa [ANALISIS_DESPLIEGUE.md](./ANALISIS_DESPLIEGUE.md) (checklist, CORS, JWT, build del frontend).
+- Configura `VITE_API_URL` con la URL pública del API en el build del frontend.
+- Usa un `JWT_SECRET` fuerte y no expongas credenciales de prueba.
+
+---
+
+## 8. (Opcional) Ejecutar solo la base de datos
 
 Dentro de `SGCA_DB/` hay un stack mínimo:
 
