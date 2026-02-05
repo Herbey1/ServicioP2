@@ -1,0 +1,8 @@
+# Override para producción: desactiva pgAdmin (no exponer en internet)
+# Uso: docker compose -f docker-compose.yml -f docker-compose.production.yml up -d
+
+services:
+  pgadmin:
+    profiles:
+      - disabled
+    # O comentar/eliminar el servicio pgadmin del compose principal

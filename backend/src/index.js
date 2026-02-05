@@ -28,8 +28,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const UPLOAD_ROOT = path.join(__dirname, "..", "uploads");
 
-// CORS Configuration - permisivo en producción
-app.use(cors());
+// CORS: si CORS_ORIGIN está definido, restringir; si no, permitir todo (desarrollo)
+const corsOrigin = process.env.CORS_ORIGIN;
+if (corsOrigin) {
+  app.use(cors({ origin: corsOrigin.split(',').map((o) => o.trim()), credentials: true }));
+} else {
+  app.use(cors());
+}
 app.use(express.json());
 
 // Root endpoint - simplest possible

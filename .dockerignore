@@ -1,0 +1,13 @@
+# Excluir del build del frontend
+node_modules
+dist
+.git
+.gitignore
+*.md
+.env
+.env.*
+backend/
+SGCA_DB/
+docker-compose*.yml
+Dockerfile
+Dockerfile.frontend
