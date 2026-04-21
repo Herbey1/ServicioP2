@@ -40,6 +40,23 @@ const ESTADO_MAP = {
   DEVUELTA: { tab: "Devueltas", status: "Devuelta" }
 };
 
+const REPORTE_ESTADO_MAP = {
+  PENDIENTE: { tab: "Pendientes", status: "Pendiente" },
+  EN_REVISION: { tab: "En revisión", status: "En revisión" },
+  APROBADO: { tab: "Aprobados", status: "Aprobado" },
+  RECHAZADO: { tab: "Rechazados", status: "Rechazado" },
+  RECHAZO: { tab: "Rechazados", status: "Rechazado" },
+  DEVUELTO: { tab: "Devueltos", status: "Devuelto" }
+};
+
+const createEmptyReportesGroup = () => ({
+  Pendientes: [],
+  "En revisión": [],
+  Aprobados: [],
+  Rechazados: [],
+  Devueltos: []
+});
+
 const formatDateOnly = (value) => {
   if (!value) return "";
   if (typeof value === "string") return value.slice(0, 10);
@@ -99,6 +116,34 @@ const mapSolicitudFromApi = (item, fallbackSolicitante = "") => {
   };
 };
 
+const mapReporteFromApi = (item) => {
+  const map = REPORTE_ESTADO_MAP[item.estado] || REPORTE_ESTADO_MAP.PENDIENTE;
+  return {
+    id: item.id,
+    solicitudId: item.solicitud_id,
+    titulo: item.asunto || "Reporte de Comisión",
+    solicitante: item.usuarios?.nombre || "",
+    fechaEntrega: item.fecha_entrega?.slice(0, 10) || "",
+    status: map.status,
+    estado: item.estado || "PENDIENTE",
+    tab: map.tab,
+    descripcion: item.descripcion || "",
+    comentariosAdmin: item.motivo_estado || undefined,
+    isPending: item.is_pending || item.estado === "PENDIENTE",
+    evidencias: Array.isArray(item.evidencias) ? item.evidencias : []
+  };
+};
+
+const groupReportes = (items) => {
+  const grouped = createEmptyReportesGroup();
+  items.forEach((item) => {
+    const reporte = mapReporteFromApi(item);
+    const tabKey = grouped[reporte.tab] ? reporte.tab : "Pendientes";
+    grouped[tabKey].push(reporte);
+  });
+  return grouped;
+};
+
 const isDateInRange = (value, { desde, hasta }) => {
   if (!desde && !hasta) return true;
   if (!value) return false;
@@ -137,7 +182,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
 
   /* ──────────────── Tabs comunes ──────────────── */
   const tabsComisiones = ["Pendientes", "Aprobadas", "Rechazadas", "Devueltas"]
-  const tabsReportes   = ["Pendientes", "Aprobados", "Rechazados", "Devueltos"]
+  const tabsReportes   = ["Pendientes", "En revisión", "Aprobados", "Rechazados", "Devueltos"]
 
   const [activeTabComisiones, setActiveTabComisiones] = useState("Pendientes")
   const [activeTabReportes,   setActiveTabReportes]   = useState("Pendientes")
@@ -606,6 +651,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   const [nuevoReporte,           setNuevoReporte]           = useState(emptyReporte)
   const [reportesPorTab,         setReportesPorTab]         = useState({
     Pendientes : [],
+    "En revisión": [],
     Aprobados  : [],
     Rechazados : [],
     Devueltos  : []
@@ -615,28 +661,9 @@ export default function DashboardDocente({ setIsAuthenticated }) {
   useEffect(() => {
     async function loadMyReportes() {
       try {
-        const resp = await apiFetch('/api/reportes');
-        const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
-        const estadoMap = {
-          EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-          APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-          RECHAZO: { tab: 'Rechazados', status: 'Rechazado' },
-          DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
-        };
+        const resp = await apiFetch('/api/reportes?size=100');
         const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
-        items.forEach(item => {
-          const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
-          grouped[map.tab].push({
-            id: item.id,
-            titulo: item.asunto || 'Reporte de Comisión',
-            solicitante: item.usuarios?.nombre || '',
-            fechaEntrega: item.fecha_entrega?.slice(0,10) || '',
-            status: map.status,
-            descripcion: item.descripcion || '',
-            comentariosAdmin: item.motivo_estado || undefined
-          });
-        });
-        setReportesPorTab(grouped);
+        setReportesPorTab(groupReportes(items));
       } catch (e) {
         console.error('Error cargando mis reportes', e);
       }
@@ -656,39 +683,35 @@ export default function DashboardDocente({ setIsAuthenticated }) {
       return;
     }
     try {
-      await apiFetch('/api/reportes', {
+      const createResp = await apiFetch('/api/reportes', {
         method: 'POST',
         body: {
           solicitud_id: nuevoReporte.solicitudId,
           descripcion: nuevoReporte.descripcion,
         }
       });
-      // Recargar la lista desde API
-      const resp = await apiFetch('/api/reportes');
-      const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
-      const estadoMap = {
-        EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-        APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-        RECHAZO: { tab: 'Rechazados', status: 'Rechazado' },
-        DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
-      };
-      const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
-      items.forEach(item => {
-        const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
-        grouped[map.tab].push({
-          id: item.id,
-          titulo: item.asunto || 'Reporte de Comisión',
-          solicitante: item.usuarios?.nombre || '',
-          fechaEntrega: item.fecha_entrega?.slice(0,10) || '',
-          status: map.status,
-          descripcion: item.descripcion || '',
-          comentariosAdmin: item.motivo_estado || undefined
+      if (!createResp.ok) {
+        throw new Error(createResp.data?.msg || 'No se pudo crear el reporte');
+      }
+      const reporteId = createResp.data?.reporte?.id;
+      if (nuevoReporte.evidencia && reporteId) {
+        const formData = new FormData();
+        formData.append('file', nuevoReporte.evidencia);
+        const uploadResp = await apiFetch(`/api/reportes/${reporteId}/evidencias`, {
+          method: 'POST',
+          body: formData
         });
-      });
-      setReportesPorTab(grouped);
+        if (!uploadResp.ok) {
+          throw new Error(uploadResp.data?.msg || 'El reporte se creo, pero no se pudo subir la evidencia');
+        }
+      }
+      // Recargar la lista desde API
+      const resp = await apiFetch('/api/reportes?size=100');
+      const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
+      setReportesPorTab(groupReportes(items));
       setNuevoReporte(emptyReporte);
       setShowCreateReporteModal(false);
-      setActiveTabReportes('Pendientes');
+      setActiveTabReportes('En revisión');
       showToast('Reporte creado', { type: 'success' });
     } catch (e) {
       console.error('Error creando reporte', e);
@@ -701,31 +724,27 @@ export default function DashboardDocente({ setIsAuthenticated }) {
     const { tab, index, id, ...r } = src;
     try {
       // Solo mandamos descripcion al backend; título lo provee la solicitud vinculada
-      await apiFetch(`/api/reportes/${id}`, { method: 'PATCH', body: { descripcion: r.descripcion } });
-      // Tras editar, recarga la lista real desde API
-      const resp = await apiFetch('/api/reportes');
-      const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
-      const estadoMap = {
-        EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
-        APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
-        RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
-        DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
-      };
-      (resp.items || []).forEach(item => {
-        const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
-        grouped[map.tab].push({
-          id: item.id,
-          titulo: item.asunto || 'Reporte de Comisión',
-          solicitante: item.usuarios?.nombre || '',
-          fechaEntrega: item.fecha_entrega?.slice(0,10) || '',
-          status: map.status,
-          descripcion: item.descripcion || '',
-          comentariosAdmin: item.motivo_estado || undefined
+      const saveResp = await apiFetch(`/api/reportes/${id}`, { method: 'PATCH', body: { descripcion: r.descripcion } });
+      if (!saveResp.ok) {
+        throw new Error(saveResp.data?.msg || 'No se pudo actualizar el reporte');
+      }
+      if (r.evidencia instanceof File) {
+        const formData = new FormData();
+        formData.append('file', r.evidencia);
+        const uploadResp = await apiFetch(`/api/reportes/${id}/evidencias`, {
+          method: 'POST',
+          body: formData
         });
-      });
-      setReportesPorTab(grouped);
+        if (!uploadResp.ok) {
+          throw new Error(uploadResp.data?.msg || 'El reporte se actualizo, pero no se pudo subir la evidencia');
+        }
+      }
+      // Tras editar, recarga la lista real desde API
+      const resp = await apiFetch('/api/reportes?size=100');
+      const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
+      setReportesPorTab(groupReportes(items));
       setModalEditReporte(null);
-      setActiveTabReportes('Pendientes');
+      setActiveTabReportes('En revisión');
     } catch (e) {
       console.error('Error actualizando reporte', e);
       showToast(e?.message || 'Error actualizando reporte', { type: 'error' });
@@ -743,6 +762,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
 
   /* ──────────────── UI helpers ──────────────── */
   const statusColors = {
+    Pendiente     : { text: "text-blue-700",   bg: "bg-blue-100"   },
     "En revisión": { text: "text-yellow-700", bg: "bg-yellow-100" },
     Aprobada     : { text: "text-green-700",  bg: "bg-green-100"  },
     Aprobado     : { text: "text-green-700",  bg: "bg-green-100"  },
@@ -781,6 +801,13 @@ export default function DashboardDocente({ setIsAuthenticated }) {
     const matchesDate = isDateInRange(fecha, reporteFilters)
     return matchesSearch && matchesDate
   })
+  const solicitudesPendientesReporte = reportesPorTab.Pendientes
+    .filter((reporte) => reporte.solicitudId && !reporte.id)
+    .map((reporte) => ({
+      id: reporte.solicitudId,
+      titulo: reporte.titulo,
+      fechaSalida: reporte.fechaEntrega || ""
+    }))
   const solicitudFiltersApplied = Boolean(solicitudSearchTerm || solicitudFilters.desde || solicitudFilters.hasta)
   const reporteFiltersApplied = Boolean(reporteSearchTerm || reporteFilters.desde || reporteFilters.hasta)
   const solicitudDateActive = Boolean(solicitudFilters.desde || solicitudFilters.hasta)
@@ -944,6 +971,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
               setActiveTab={setActiveTabReportes}
               counts={{
                 Pendientes: reportesPorTab.Pendientes.length,
+                "En revisión": reportesPorTab["En revisión"].length,
                 Aprobados: reportesPorTab.Aprobados.length,
                 Rechazados: reportesPorTab.Rechazados.length,
                 Devueltos: reportesPorTab.Devueltos.length,
@@ -959,7 +987,11 @@ export default function DashboardDocente({ setIsAuthenticated }) {
                     index={i}
                     statusColors={statusColors}
                     handleEdit={(r, idx, viewOnly = false) =>
-                      setModalEditReporte({ ...r, index: idx, tab: activeTabReportes, viewOnly: !!viewOnly })
+                      r.isPending
+                        ? (r.id
+                            ? setModalEditReporte({ ...r, index: idx, tab: activeTabReportes, viewOnly: false })
+                            : (setNuevoReporte({ ...emptyReporte, solicitudId: r.solicitudId, titulo: r.titulo }), setShowCreateReporteModal(true)))
+                        : setModalEditReporte({ ...r, index: idx, tab: activeTabReportes, viewOnly: !!viewOnly })
                     }
                   />
                 ))
@@ -1025,7 +1057,7 @@ export default function DashboardDocente({ setIsAuthenticated }) {
         nuevoReporte={nuevoReporte}
         setNuevoReporte={setNuevoReporte}
         guardarReporte={handleCreateReporte}
-        solicitudesDisponibles={solicitudesAprobadas}
+        solicitudesDisponibles={solicitudesPendientesReporte}
       />
 
       {modalEditReporte && (

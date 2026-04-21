@@ -7,7 +7,9 @@ export default function Sidebar({
   toggleSidebar,
   confirmLogout,
   showProfile = true,
-  extraItems = []
+  extraItems = [],
+  extraActions = [],
+  exportAction = null
 }) {
   // Sidebar estilo aside con gradiente y botones con hover
 
@@ -30,7 +32,7 @@ export default function Sidebar({
                 { label: "Reportes", key: "Reportes", description: "Informes académicos" },
                 ...(showProfile ? [{ label: "Perfil", key: "Perfil", description: "Información personal" }] : []),
                 ...extraItems
-              ].map(({ label, key, description }) => {
+              ].map(({ label, key, description, onClick, disabled }) => {
                 const isActive = activeSection === key;
                 return (
                   <div key={key} className="relative">
@@ -39,8 +41,10 @@ export default function Sidebar({
                     )}
                       <div className={`w-full rounded-l-2xl transition-all duration-200 ${isActive ? 'bg-white shadow-md' : 'hover:bg-white'}`}>
                         <button
-                          onClick={() => setActiveSection(key)}
-                          className={`w-full text-left flex flex-col py-3 px-6 rounded-l-2xl focus:outline-none group ${isActive ? 'text-green-700 font-medium' : 'text-white'}`}
+                          type="button"
+                          onClick={() => onClick ? onClick() : setActiveSection(key)}
+                          disabled={disabled}
+                          className={`w-full text-left flex flex-col py-3 px-6 rounded-l-2xl focus:outline-none group disabled:opacity-60 disabled:cursor-not-allowed ${isActive ? 'text-green-700 font-medium' : 'text-white'}`}
                         >
                           <span className={`text-sm truncate ${isActive ? 'text-green-700' : 'group-hover:text-green-700'}`}>{label}</span>
                           {description && (
@@ -51,10 +55,46 @@ export default function Sidebar({
                   </div>
                 );
               })}
+
+              {extraActions.length > 0 && (
+                <div className="pt-3 mt-3 border-t border-white/20 space-y-2">
+                  {extraActions.map(({ label, description, onClick, disabled }) => (
+                    <div key={label} className="w-full rounded-l-2xl transition-all duration-200 hover:bg-white">
+                      <button
+                        type="button"
+                        onClick={onClick}
+                        disabled={disabled}
+                        className={`w-full text-left flex flex-col py-3 px-6 rounded-l-2xl focus:outline-none group disabled:opacity-60 disabled:cursor-not-allowed ${disabled ? 'text-white' : 'text-white'}`}
+                      >
+                        <span className="text-sm truncate group-hover:text-green-700">{label}</span>
+                        {description && (
+                          <span className="text-xs mt-1 text-white/90 group-hover:text-green-700">{description}</span>
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </nav>
 
+            {exportAction && (
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={exportAction.onClick}
+                  disabled={exportAction.disabled}
+                  className="w-full text-left py-3 px-6 rounded-2xl bg-white/10 hover:bg-white text-white hover:text-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <span className="block text-sm font-medium">{exportAction.label}</span>
+                  {exportAction.description && (
+                    <span className="block text-xs mt-1 text-white/90">{exportAction.description}</span>
+                  )}
+                </button>
+              </div>
+            )}
+
             {/* Session info directly above logout */}
-            <div>
+            <div className="mt-6">
               <div className="bg-white/10 rounded-xl p-3">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white font-medium">U</div>

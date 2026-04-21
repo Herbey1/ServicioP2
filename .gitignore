@@ -46,6 +46,7 @@ docker-data/
 
 # Archivos subidos
 uploads/
+AGENTS.md
 
 # Prisma
 prisma/dev.db

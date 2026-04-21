@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import PropTypes from "prop-types"
 import { useTheme } from "../../../context/ThemeContext"
-import { apiFetch } from "../../../api/client"
+import { API_URL, apiFetch } from "../../../api/client"
 
 export default function ReviewReporteModal({
   isOpen,
@@ -17,7 +17,16 @@ export default function ReviewReporteModal({
   const [processing, setProcessing] = useState(false) // evita duplicados
   const { darkMode } = useTheme();
   const [historial, setHistorial] = useState([])
+  const [evidencias, setEvidencias] = useState([])
   const [loadingHist, setLoadingHist] = useState(false)
+  const evidenciasDisponibles = evidencias.length > 0
+    ? evidencias
+    : (Array.isArray(reporte?.evidencias) ? reporte.evidencias : [])
+
+  const resolveUrl = (url) => {
+    if (!url) return "#"
+    return /^https?:\/\//i.test(url) ? url : `${API_URL}${url}`
+  }
 
   const handleAction = (action) => {
     if (processing) return
@@ -31,14 +40,19 @@ export default function ReviewReporteModal({
       try {
         setLoadingHist(true)
         const detail = await apiFetch(`/api/reportes/${reporte.id}`)
-        setHistorial(detail.estados_hist || [])
+        const data = detail?.data ?? {}
+        setHistorial(data.estados_hist || [])
+        setEvidencias(Array.isArray(data.evidencias) ? data.evidencias : [])
       } catch (e) {
         console.error('Error cargando historial de reporte', e)
       } finally {
         setLoadingHist(false)
       }
     }
-    if (isOpen && reporte?.id) load()
+    if (isOpen && reporte?.id) {
+      setEvidencias(Array.isArray(reporte.evidencias) ? reporte.evidencias : [])
+      load()
+    }
   }, [isOpen, reporte?.id])
 
   if (!isOpen) return null
@@ -56,14 +70,45 @@ export default function ReviewReporteModal({
             <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-4 rounded-lg`}>
               <h3 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Estado del reporte</h3>
               <p><span className="font-medium">Status:</span> {reporte.status}</p>
-              {reporte.evidencia && (
-                <p className="text-sm text-blue-600 mt-1">Archivo adjunto</p>
-              )}
+              <p className={`text-sm mt-1 ${evidenciasDisponibles.length > 0 ? 'text-blue-600' : 'opacity-70'}`}>
+                {evidenciasDisponibles.length > 0
+                  ? `${evidenciasDisponibles.length} archivo${evidenciasDisponibles.length === 1 ? '' : 's'} adjunto${evidenciasDisponibles.length === 1 ? '' : 's'}`
+                  : 'Sin archivos adjuntos'}
+              </p>
             </div>
           </div>          {/* Descripción */}
           <div className="mb-6">
             <h3 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Descripción / resultados</h3>
             <p className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-3 rounded`}>{reporte.descripcion}</p>
+          </div>
+
+          {/* Evidencias */}
+          <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-4 rounded-lg mb-6`}>
+            <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white border-gray-600' : 'text-gray-800 border-gray-200'} border-b pb-2`}>Archivos adjuntos</h3>
+            {evidenciasDisponibles.length === 0 ? (
+              <p className="text-sm opacity-75">No hay archivos adjuntos.</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {evidenciasDisponibles.map((archivo) => (
+                  <li key={archivo.id || archivo.url} className={`${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} p-2 rounded border flex items-center justify-between gap-3`}>
+                    <div>
+                      <p className="font-medium">{archivo.filename}</p>
+                      <p className="text-xs opacity-75">
+                        {archivo.mime_type || 'Archivo'} - {Math.round((archivo.bytes || 0) / 1024)} KB
+                      </p>
+                    </div>
+                    <a
+                      href={resolveUrl(archivo.url)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-green-700 hover:text-green-900 font-medium"
+                    >
+                      Ver archivo
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Historial de estados */}

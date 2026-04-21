@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { useTheme } from "../../context/ThemeContext"
-import { apiFetch } from "../../api/client"
+import { API_URL, apiFetch } from "../../api/client"
 import { useToast } from "../../context/ToastContext"
 
 /* ── Componentes compartidos ─ */
@@ -74,14 +74,16 @@ const mapSolicitudItem = (item) => {
 
 const mapReporteItem = (item) => {
   const estadoMap = {
-    EN_REVISION: { tab: 'Pendientes', status: 'En revisión' },
+    PENDIENTE: { tab: 'Pendientes', status: 'Pendiente' },
+    EN_REVISION: { tab: 'En revisión', status: 'En revisión' },
     APROBADO: { tab: 'Aprobados', status: 'Aprobado' },
     RECHAZADO: { tab: 'Rechazados', status: 'Rechazado' },
     DEVUELTO: { tab: 'Devueltos', status: 'Devuelto' }
   };
-  const map = estadoMap[item.estado] || estadoMap.EN_REVISION;
+  const map = estadoMap[item.estado] || estadoMap.PENDIENTE;
   return {
     id: item.id,
+    solicitudId: item.solicitud_id,
     titulo: item.asunto || "Reporte de Comisión",
     solicitante: item.usuarios?.nombre || item.docente_id,
     fechaEntrega: item.fecha_entrega?.slice(0,10) || "",
@@ -90,7 +92,9 @@ const mapReporteItem = (item) => {
     tab: map.tab,
     ultimoCambioFecha: item.last_change_at ? new Date(item.last_change_at).toLocaleString() : undefined,
     ultimoCambioActor: item.last_change_by || undefined,
-    historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined
+    historialCount: typeof item.hist_count === 'number' ? item.hist_count : undefined,
+    isPending: item.is_pending || item.estado === "PENDIENTE",
+    evidencias: Array.isArray(item.evidencias) ? item.evidencias : []
   };
 };
 
@@ -112,13 +116,14 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     setActiveSectionRaw(v)
   }
   const tabsComisiones = ["Pendientes", "Aprobadas", "Rechazadas", "Devueltas"]
-  const tabsReportes   = ["Pendientes", "Aprobados", "Rechazados", "Devueltos"]
+  const tabsReportes   = ["Pendientes", "En revisión", "Aprobados", "Rechazados", "Devueltos"]
   const [activeTabComisiones, setActiveTabComisiones] = useState("Pendientes")
   const [activeTabReportes,   setActiveTabReportes]   = useState("Pendientes")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showLogout,  setShowLogout]  = useState(false)
   const [showAddDocente, setShowAddDocente] = useState(false)
   const [addingDocente, setAddingDocente] = useState(false)
+  const [exportingDump, setExportingDump] = useState(false)
   const [usuarios, setUsuarios] = useState([])
   const [loadingUsuarios, setLoadingUsuarios] = useState(false)
   const [userActionId, setUserActionId] = useState(null)
@@ -291,6 +296,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   /* ------------- REPORTES ------------- */
   const [reportesPorTab, setReportesPorTab] = useState({
     Pendientes: [],
+    "En revisión": [],
     Aprobados : [],
     Rechazados: [],
     Devueltos: []
@@ -301,8 +307,8 @@ export default function AdminDashboard({ setIsAuthenticated }) {
   const loadReportes = useCallback(async () => {
     try {
       setLoadingReportes(true)
-      const resp = await apiFetch('/api/reportes'); 
-      const grouped = { Pendientes: [], Aprobados: [], Rechazados: [], Devueltos: [] };
+      const resp = await apiFetch('/api/reportes?size=100');
+      const grouped = { Pendientes: [], "En revisión": [], Aprobados: [], Rechazados: [], Devueltos: [] };
       const items = Array.isArray(resp?.data?.items) ? resp.data.items : [];
       items.forEach(item => {
         const mapped = mapReporteItem(item);
@@ -479,6 +485,39 @@ export default function AdminDashboard({ setIsAuthenticated }) {
     }
   }
 
+  const handleExportDump = async () => {
+    try {
+      setExportingDump(true)
+      const token = localStorage.getItem('token')
+      const resp = await fetch(`${API_URL}/api/export/dump`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}))
+        throw new Error(data?.msg || data?.message || 'No se pudo generar el archivo')
+      }
+
+      const blob = await resp.blob()
+      const disposition = resp.headers.get('Content-Disposition') || ''
+      const match = disposition.match(/filename="?([^"]+)"?/i)
+      const filename = match?.[1] || `dump-sgca-${new Date().toISOString().slice(0, 10)}.xls`
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      showToast('Dump generado correctamente', { type: 'success' })
+    } catch (e) {
+      console.error('Error exportando dump', e)
+      showToast(e?.message || 'No se pudo exportar la informacion', { type: 'error' })
+    } finally {
+      setExportingDump(false)
+    }
+  }
+
   const closeAddDocente = () => {
     if (addingDocente) return
     setShowAddDocente(false)
@@ -558,6 +597,12 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         confirmLogout={showLogoutModal}
         showProfile={false}
         extraItems={[{ label: 'Usuarios', key: 'Usuarios' }]}
+        exportAction={{
+          label: exportingDump ? 'Exportando Excel...' : 'Exportar Excel',
+          description: 'Descargar dump del sistema',
+          onClick: handleExportDump,
+          disabled: exportingDump
+        }}
       />
 
       <MainContent
@@ -574,8 +619,8 @@ export default function AdminDashboard({ setIsAuthenticated }) {
         }
         tabs={activeSection === "Comisiones" ? tabsComisiones : tabsReportes}
   onAddDocenteClick={() => setShowAddDocente(true)}
-  onRefreshComisiones={loadSolicitudes}
-  onRefreshReportes={loadReportes}
+        onRefreshComisiones={loadSolicitudes}
+        onRefreshReportes={loadReportes}
         disableAddDocenteButton={addingDocente}
         solicitudesActivas={solicitudesActivas}
         reportesActivos={reportesActivos}
@@ -608,6 +653,7 @@ export default function AdminDashboard({ setIsAuthenticated }) {
             : activeSection === 'Reportes'
             ? {
                 Pendientes: reportesPorTab.Pendientes.length,
+                "En revisión": reportesPorTab["En revisión"].length,
                 Aprobados: reportesPorTab.Aprobados.length,
                 Rechazados: reportesPorTab.Rechazados.length,
                 Devueltos: reportesPorTab.Devueltos.length,

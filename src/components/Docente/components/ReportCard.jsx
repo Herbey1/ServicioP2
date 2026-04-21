@@ -43,12 +43,21 @@ export default function ReportCard({ reporte, index, statusColors, handleEdit })
       <div className="flex items-center gap-6">
         <div className="text-right">
           <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Fecha de entrega</p>
-          <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>{reporte.fechaEntrega}</p>
+          <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>{reporte.fechaEntrega || "Sin entregar"}</p>
         </div>
 
         <span className={`${text} ${bg} rounded-full px-3 py-1 text-sm font-medium`}>
           {reporte.status}
         </span>
+
+        {reporte.status === "Pendiente" && (
+          <button
+            onClick={() => handleEdit(reporte, index)}
+            className="text-green-700 hover:text-green-900 font-medium text-sm"
+          >
+            Crear reporte
+          </button>
+        )}
 
         {[
           "En revisión",

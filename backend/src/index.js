@@ -7,6 +7,7 @@ import { PrismaClient } from "@prisma/client";
 import authRouter from "./routes/auth.js";
 import solicitudesRouter from "./routes/solicitudes.js";
 import reportesRouter from "./routes/reportes.js";
+import exportRouter from "./routes/export.js";
 import { requireAuth, requireRole } from "./middleware/auth.js";
 import usuariosRouter from "./routes/usuarios.js";
 
@@ -102,6 +103,8 @@ app.use("/api/solicitudes", requireAuth, solicitudesRouter(prisma));
 
 // Reportes (todas requieren login)
 app.use("/api/reportes", requireAuth, reportesRouter(prisma));
+
+app.use("/api/export", requireAuth, requireRole("ADMIN"), exportRouter(prisma));
 
 // Gestión de usuarios (solo ADMIN)
 app.use(

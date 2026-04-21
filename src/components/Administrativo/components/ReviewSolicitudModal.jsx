@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import PropTypes from "prop-types"
 import { useTheme } from "../../../context/ThemeContext"
-import { apiFetch } from "../../../api/client"
+import { API_URL, apiFetch } from "../../../api/client"
 
 export default function ReviewSolicitudModal({
   isOpen,
@@ -19,6 +19,14 @@ export default function ReviewSolicitudModal({
   const [historial, setHistorial] = useState([])
   const [detail, setDetail] = useState(null)
   const [loadingHist, setLoadingHist] = useState(false)
+  const archivosAdjuntos = Array.isArray(detail?.solicitud_archivos)
+    ? detail.solicitud_archivos
+    : (Array.isArray(solicitud?.archivos) ? solicitud.archivos : [])
+
+  const resolveUrl = (url) => {
+    if (!url) return "#"
+    return /^https?:\/\//i.test(url) ? url : `${API_URL}${url}`
+  }
 
   /* Cierra el modal y ejecuta la acción */
   const handleAction = (action) => {
@@ -32,7 +40,8 @@ export default function ReviewSolicitudModal({
     async function load() {
       try {
         setLoadingHist(true)
-        const d = await apiFetch(`/api/solicitudes/${solicitud.id}`)
+        const resp = await apiFetch(`/api/solicitudes/${solicitud.id}`)
+        const d = resp?.data ?? {}
         // viene con solicitud_estados_hist ascendente
         setHistorial(d.solicitud_estados_hist || [])
         setDetail(d)
@@ -104,6 +113,35 @@ export default function ReviewSolicitudModal({
               <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{solicitud.comentarios}</p>
             </div>
           )}
+
+          {/* Archivos adjuntos */}
+          <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-4 rounded-lg mb-6`}>
+            <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white border-gray-600' : 'text-gray-800 border-gray-200'} border-b pb-2`}>Archivos adjuntos</h3>
+            {archivosAdjuntos.length === 0 ? (
+              <p className="text-sm opacity-75">No hay archivos adjuntos.</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {archivosAdjuntos.map((archivo) => (
+                  <li key={archivo.id || archivo.url} className={`${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} p-2 rounded border flex items-center justify-between gap-3`}>
+                    <div>
+                      <p className="font-medium">{archivo.filename}</p>
+                      <p className="text-xs opacity-75">
+                        {archivo.mime_type || 'Archivo'} - {Math.round((archivo.bytes || 0) / 1024)} KB
+                      </p>
+                    </div>
+                    <a
+                      href={resolveUrl(archivo.url)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-green-700 hover:text-green-900 font-medium"
+                    >
+                      Ver archivo
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           
           {/* Comentarios previos del administrador */}
           {solicitud.comentariosAdmin && (

@@ -32,6 +32,21 @@ function canTransition(from, to) {
   return false;
 }
 
+async function ensurePendingReporte(tx, solicitud) {
+  if (!solicitud?.id || !solicitud?.docente_id) return null;
+
+  return tx.reportes.upsert({
+    where: { solicitud_id: solicitud.id },
+    update: {},
+    create: {
+      solicitud_id: solicitud.id,
+      docente_id: solicitud.docente_id,
+      descripcion: null,
+      estado: "PENDIENTE",
+    }
+  });
+}
+
 export default function solicitudesRouter(prisma) {
   const router = express.Router();
 
@@ -310,6 +325,9 @@ export default function solicitudesRouter(prisma) {
             actor_id: req.user.sub
           }
         });
+        if (estado === "APROBADA") {
+          await ensurePendingReporte(tx, upd);
+        }
         return upd;
       });
 
